@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Download, Info, Loader } from 'lucide-react'
 import type { FissionReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryFission, getAllElements } from '../services/queryService'
+import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
 export default function FissionQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const [availableElements, setAvailableElements] = useState<Element[]>([])
 
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
@@ -19,21 +21,29 @@ export default function FissionQuery() {
 
   const [results, setResults] = useState<FissionReaction[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement, setSelectedElement] = useState('')
+  const [selectedElement, setSelectedElement] = useState<string[]>([])
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [queryTime, setQueryTime] = useState<number>(0)
   const [isQuerying, setIsQuerying] = useState(false)
+
+  // Load elements when database is ready
+  useEffect(() => {
+    if (db) {
+      const allElements = getAllElements(db)
+      setAvailableElements(allElements)
+    }
+  }, [db])
 
   const handleQuery = () => {
     if (!db) return
 
     setIsQuerying(true)
     try {
-      // Update filter with selected element
-      const queryFilter = {
+      // Build filter with selected elements
+      const queryFilter: QueryFilter = {
         ...filter,
-        elements: selectedElement ? [selectedElement] : []
+        elements: selectedElement.length > 0 ? selectedElement : undefined
       }
 
       const result = queryFission(db, queryFilter)
@@ -70,9 +80,6 @@ export default function FissionQuery() {
     a.click()
   }
 
-  // Get available elements from database
-  const availableElements: Element[] = db ? getAllElements(db) : []
-
   if (dbLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -103,21 +110,13 @@ export default function FissionQuery() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Input Element (E)
-            </label>
-            <select
-              className="input"
-              value={selectedElement}
-              onChange={(e) => setSelectedElement(e.target.value)}
-            >
-              <option value="">All Elements</option>
-              {availableElements.map(el => (
-                <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
-              ))}
-            </select>
-          </div>
+          {/* Input Element Selection (E) */}
+          <PeriodicTableSelector
+            label="Input Element (E)"
+            availableElements={availableElements}
+            selectedElements={selectedElement}
+            onSelectionChange={setSelectedElement}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -201,15 +200,19 @@ export default function FissionQuery() {
             )}
           </button>
           <button
-            onClick={() => setFilter({
-              elements: [],
-              minMeV: undefined,
-              maxMeV: undefined,
-              neutrinoTypes: ['none', 'left', 'right'],
-              limit: 100,
-              orderBy: 'MeV',
-              orderDirection: 'desc'
-            })}
+            onClick={() => {
+              setFilter({
+                elements: [],
+                minMeV: undefined,
+                maxMeV: undefined,
+                neutrinoTypes: ['none', 'left', 'right'],
+                limit: 100,
+                orderBy: 'MeV',
+                orderDirection: 'desc'
+              })
+              setSelectedElement([])
+              setShowResults(false)
+            }}
             className="btn btn-secondary px-6 py-2"
           >
             Reset
@@ -221,9 +224,13 @@ export default function FissionQuery() {
             <Info className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
           </div>
-          <code className="text-xs text-gray-600 block font-mono">
-            SELECT * FROM FissionAll WHERE {filter.minMeV ? `MeV >= ${filter.minMeV}` : '1=1'}
-            {filter.maxMeV ? ` AND MeV <= ${filter.maxMeV}` : ''}
+          <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
+            SELECT * FROM FissionAll
+            {(selectedElement.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {selectedElement.length > 0 && `E IN (${selectedElement.map(e => `'${e}'`).join(', ')})`}
+            {selectedElement.length > 0 && filter.minMeV !== undefined && ' AND '}
+            {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
+            {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
           </code>
         </div>

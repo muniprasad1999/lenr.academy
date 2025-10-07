@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Download, Info, Loader } from 'lucide-react'
 import type { TwoToTwoReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryTwoToTwo, getAllElements } from '../services/queryService'
+import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
 export default function TwoToTwoQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const [availableElements, setAvailableElements] = useState<Element[]>([])
 
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
@@ -19,21 +21,34 @@ export default function TwoToTwoQuery() {
 
   const [results, setResults] = useState<TwoToTwoReaction[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement1, setSelectedElement1] = useState('')
-  const [selectedElement2, setSelectedElement2] = useState('')
+  const [selectedElement1, setSelectedElement1] = useState<string[]>([])
+  const [selectedElement2, setSelectedElement2] = useState<string[]>([])
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [queryTime, setQueryTime] = useState<number>(0)
   const [isQuerying, setIsQuerying] = useState(false)
+
+  // Load elements when database is ready
+  useEffect(() => {
+    if (db) {
+      const allElements = getAllElements(db)
+      setAvailableElements(allElements)
+    }
+  }, [db])
 
   const handleQuery = () => {
     if (!db) return
 
     setIsQuerying(true)
     try {
-      // Update filter with selected elements
-      const elements = [selectedElement1, selectedElement2].filter(e => e)
-      const queryFilter = { ...filter, elements }
+      // Build filter with selected elements
+      const allSelectedElements = [...selectedElement1, ...selectedElement2]
+      const queryFilter: QueryFilter = {
+        ...filter,
+        elements: allSelectedElements.length > 0 ? allSelectedElements : undefined,
+        element1List: selectedElement1.length > 0 ? selectedElement1 : undefined,
+        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined
+      }
 
       const result = queryTwoToTwo(db, queryFilter)
 
@@ -69,9 +84,6 @@ export default function TwoToTwoQuery() {
     a.click()
   }
 
-  // Get available elements from database
-  const availableElements: Element[] = db ? getAllElements(db) : []
-
   if (dbLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -102,37 +114,21 @@ export default function TwoToTwoQuery() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Input Element 1 (E1)
-            </label>
-            <select
-              className="input"
-              value={selectedElement1}
-              onChange={(e) => setSelectedElement1(e.target.value)}
-            >
-              <option value="">All Elements</option>
-              {availableElements.map(el => (
-                <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
-              ))}
-            </select>
-          </div>
+          {/* Input Element 1 Selection (E1) */}
+          <PeriodicTableSelector
+            label="Input Element 1 (E1)"
+            availableElements={availableElements}
+            selectedElements={selectedElement1}
+            onSelectionChange={setSelectedElement1}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Input Element 2 (E2)
-            </label>
-            <select
-              className="input"
-              value={selectedElement2}
-              onChange={(e) => setSelectedElement2(e.target.value)}
-            >
-              <option value="">All Elements</option>
-              {availableElements.map(el => (
-                <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
-              ))}
-            </select>
-          </div>
+          {/* Input Element 2 Selection (E2) */}
+          <PeriodicTableSelector
+            label="Input Element 2 (E2)"
+            availableElements={availableElements}
+            selectedElements={selectedElement2}
+            onSelectionChange={setSelectedElement2}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -226,8 +222,9 @@ export default function TwoToTwoQuery() {
                 orderBy: 'MeV',
                 orderDirection: 'desc'
               })
-              setSelectedElement1('')
-              setSelectedElement2('')
+              setSelectedElement1([])
+              setSelectedElement2([])
+              setShowResults(false)
             }}
             className="btn btn-secondary px-6 py-2"
           >
@@ -240,11 +237,15 @@ export default function TwoToTwoQuery() {
             <Info className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
           </div>
-          <code className="text-xs text-gray-600 block font-mono">
-            SELECT * FROM TwoToTwoAll WHERE {filter.minMeV ? `MeV >= ${filter.minMeV}` : '1=1'}
-            {filter.maxMeV ? ` AND MeV <= ${filter.maxMeV}` : ''}
-            {selectedElement1 ? ` AND E1 = '${selectedElement1}'` : ''}
-            {selectedElement2 ? ` AND E2 = '${selectedElement2}'` : ''}
+          <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
+            SELECT * FROM TwoToTwoAll
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
+            {selectedElement1.length > 0 && selectedElement2.length > 0 && ' AND '}
+            {selectedElement2.length > 0 && `E2 IN (${selectedElement2.map(e => `'${e}'`).join(', ')})`}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0) && filter.minMeV !== undefined && ' AND '}
+            {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
+            {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
           </code>
         </div>

@@ -3,6 +3,7 @@ import { Search, Download, Info, Loader2, AlertCircle } from 'lucide-react'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryFusion, getAllElements } from '../services/queryService'
+import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
 export default function FusionQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
@@ -123,48 +124,20 @@ export default function FusionQuery() {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Input Element 1 Selection (E1) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Input Element 1 (E1) - Multi-select
-            </label>
-            <select
-              className="input"
-              multiple
-              size={6}
-              value={selectedElement1}
-              onChange={(e) => {
-                const options = Array.from(e.target.selectedOptions, option => option.value)
-                setSelectedElement1(options)
-              }}
-            >
-              {elements.map(el => (
-                <option key={`e1-${el.Z}`} value={el.E}>{el.E} - {el.EName}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
-          </div>
+          <PeriodicTableSelector
+            label="Input Element 1 (E1)"
+            availableElements={elements}
+            selectedElements={selectedElement1}
+            onSelectionChange={setSelectedElement1}
+          />
 
           {/* Target Element Selection (E) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target/Output Element (E) - Multi-select
-            </label>
-            <select
-              className="input"
-              multiple
-              size={6}
-              value={selectedElement2}
-              onChange={(e) => {
-                const options = Array.from(e.target.selectedOptions, option => option.value)
-                setSelectedElement2(options)
-              }}
-            >
-              {elements.map(el => (
-                <option key={`e2-${el.Z}`} value={el.E}>{el.E} - {el.EName}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
-          </div>
+          <PeriodicTableSelector
+            label="Target/Output Element (E)"
+            availableElements={elements}
+            selectedElements={selectedElement2}
+            onSelectionChange={setSelectedElement2}
+          />
 
           {/* MeV Range */}
           <div>

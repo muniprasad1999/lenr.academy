@@ -1,0 +1,460 @@
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown, X } from 'lucide-react'
+import type { Element } from '../types'
+
+interface PeriodicTableSelectorProps {
+  label: string
+  availableElements: Element[]
+  selectedElements: string[]
+  onSelectionChange: (elements: string[]) => void
+  maxSelections?: number
+}
+
+// Standard periodic table layout (Period, Group) for each element by atomic number
+const ELEMENT_POSITIONS: Record<number, { period: number; group: number }> = {
+  1: { period: 1, group: 1 },   // H
+  2: { period: 1, group: 18 },  // He
+  3: { period: 2, group: 1 },   // Li
+  4: { period: 2, group: 2 },   // Be
+  5: { period: 2, group: 13 },  // B
+  6: { period: 2, group: 14 },  // C
+  7: { period: 2, group: 15 },  // N
+  8: { period: 2, group: 16 },  // O
+  9: { period: 2, group: 17 },  // F
+  10: { period: 2, group: 18 }, // Ne
+  11: { period: 3, group: 1 },  // Na
+  12: { period: 3, group: 2 },  // Mg
+  13: { period: 3, group: 13 }, // Al
+  14: { period: 3, group: 14 }, // Si
+  15: { period: 3, group: 15 }, // P
+  16: { period: 3, group: 16 }, // S
+  17: { period: 3, group: 17 }, // Cl
+  18: { period: 3, group: 18 }, // Ar
+  19: { period: 4, group: 1 },  // K
+  20: { period: 4, group: 2 },  // Ca
+  21: { period: 4, group: 3 },  // Sc
+  22: { period: 4, group: 4 },  // Ti
+  23: { period: 4, group: 5 },  // V
+  24: { period: 4, group: 6 },  // Cr
+  25: { period: 4, group: 7 },  // Mn
+  26: { period: 4, group: 8 },  // Fe
+  27: { period: 4, group: 9 },  // Co
+  28: { period: 4, group: 10 }, // Ni
+  29: { period: 4, group: 11 }, // Cu
+  30: { period: 4, group: 12 }, // Zn
+  31: { period: 4, group: 13 }, // Ga
+  32: { period: 4, group: 14 }, // Ge
+  33: { period: 4, group: 15 }, // As
+  34: { period: 4, group: 16 }, // Se
+  35: { period: 4, group: 17 }, // Br
+  36: { period: 4, group: 18 }, // Kr
+  37: { period: 5, group: 1 },  // Rb
+  38: { period: 5, group: 2 },  // Sr
+  39: { period: 5, group: 3 },  // Y
+  40: { period: 5, group: 4 },  // Zr
+  41: { period: 5, group: 5 },  // Nb
+  42: { period: 5, group: 6 },  // Mo
+  43: { period: 5, group: 7 },  // Tc
+  44: { period: 5, group: 8 },  // Ru
+  45: { period: 5, group: 9 },  // Rh
+  46: { period: 5, group: 10 }, // Pd
+  47: { period: 5, group: 11 }, // Ag
+  48: { period: 5, group: 12 }, // Cd
+  49: { period: 5, group: 13 }, // In
+  50: { period: 5, group: 14 }, // Sn
+  51: { period: 5, group: 15 }, // Sb
+  52: { period: 5, group: 16 }, // Te
+  53: { period: 5, group: 17 }, // I
+  54: { period: 5, group: 18 }, // Xe
+  55: { period: 6, group: 1 },  // Cs
+  56: { period: 6, group: 2 },  // Ba
+  57: { period: 8, group: 3 },  // La (Lanthanide)
+  58: { period: 8, group: 4 },  // Ce
+  59: { period: 8, group: 5 },  // Pr
+  60: { period: 8, group: 6 },  // Nd
+  61: { period: 8, group: 7 },  // Pm
+  62: { period: 8, group: 8 },  // Sm
+  63: { period: 8, group: 9 },  // Eu
+  64: { period: 8, group: 10 }, // Gd
+  65: { period: 8, group: 11 }, // Tb
+  66: { period: 8, group: 12 }, // Dy
+  67: { period: 8, group: 13 }, // Ho
+  68: { period: 8, group: 14 }, // Er
+  69: { period: 8, group: 15 }, // Tm
+  70: { period: 8, group: 16 }, // Yb
+  71: { period: 8, group: 17 }, // Lu
+  72: { period: 6, group: 4 },  // Hf
+  73: { period: 6, group: 5 },  // Ta
+  74: { period: 6, group: 6 },  // W
+  75: { period: 6, group: 7 },  // Re
+  76: { period: 6, group: 8 },  // Os
+  77: { period: 6, group: 9 },  // Ir
+  78: { period: 6, group: 10 }, // Pt
+  79: { period: 6, group: 11 }, // Au
+  80: { period: 6, group: 12 }, // Hg
+  81: { period: 6, group: 13 }, // Tl
+  82: { period: 6, group: 14 }, // Pb
+  83: { period: 6, group: 15 }, // Bi
+  84: { period: 6, group: 16 }, // Po
+  85: { period: 6, group: 17 }, // At
+  86: { period: 6, group: 18 }, // Rn
+  87: { period: 7, group: 1 },  // Fr
+  88: { period: 7, group: 2 },  // Ra
+  89: { period: 9, group: 3 },  // Ac (Actinide)
+  90: { period: 9, group: 4 },  // Th
+  91: { period: 9, group: 5 },  // Pa
+  92: { period: 9, group: 6 },  // U
+  93: { period: 9, group: 7 },  // Np
+  94: { period: 9, group: 8 },  // Pu
+  95: { period: 9, group: 9 },  // Am
+  96: { period: 9, group: 10 }, // Cm
+  97: { period: 9, group: 11 }, // Bk
+  98: { period: 9, group: 12 }, // Cf
+  99: { period: 9, group: 13 }, // Es
+  100: { period: 9, group: 14 }, // Fm
+  101: { period: 9, group: 15 }, // Md
+  102: { period: 9, group: 16 }, // No
+  103: { period: 9, group: 17 }, // Lr
+  104: { period: 7, group: 4 },  // Rf
+  105: { period: 7, group: 5 },  // Db
+  106: { period: 7, group: 6 },  // Sg
+  107: { period: 7, group: 7 },  // Bh
+  108: { period: 7, group: 8 },  // Hs
+  109: { period: 7, group: 9 },  // Mt
+  110: { period: 7, group: 10 }, // Ds
+  111: { period: 7, group: 11 }, // Rg
+  112: { period: 7, group: 12 }, // Cn
+  113: { period: 7, group: 13 }, // Nh
+  114: { period: 7, group: 14 }, // Fl
+  115: { period: 7, group: 15 }, // Mc
+  116: { period: 7, group: 16 }, // Lv
+  117: { period: 7, group: 17 }, // Ts
+  118: { period: 7, group: 18 }, // Og
+}
+
+export default function PeriodicTableSelector({
+  label,
+  availableElements,
+  selectedElements,
+  onSelectionChange,
+  maxSelections,
+}: PeriodicTableSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const toggleElement = (symbol: string) => {
+    if (selectedElements.includes(symbol)) {
+      onSelectionChange(selectedElements.filter(e => e !== symbol))
+    } else {
+      if (maxSelections && selectedElements.length >= maxSelections) {
+        return // Don't allow more selections
+      }
+      onSelectionChange([...selectedElements, symbol])
+    }
+  }
+
+  const clearSelection = () => {
+    onSelectionChange([])
+  }
+
+  const selectAll = () => {
+    if (maxSelections && maxSelections < availableElements.length) {
+      return // Don't allow select all if there's a max limit
+    }
+    onSelectionChange(availableElements.map(el => el.E))
+  }
+
+  // Create a set of available element symbols for quick lookup
+  const availableSymbols = new Set(availableElements.map(el => el.E))
+
+  // Create full element list with all 118 elements
+  const allElementNames: Record<number, string> = {
+    1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N', 8: 'O', 9: 'F', 10: 'Ne',
+    11: 'Na', 12: 'Mg', 13: 'Al', 14: 'Si', 15: 'P', 16: 'S', 17: 'Cl', 18: 'Ar', 19: 'K', 20: 'Ca',
+    21: 'Sc', 22: 'Ti', 23: 'V', 24: 'Cr', 25: 'Mn', 26: 'Fe', 27: 'Co', 28: 'Ni', 29: 'Cu', 30: 'Zn',
+    31: 'Ga', 32: 'Ge', 33: 'As', 34: 'Se', 35: 'Br', 36: 'Kr', 37: 'Rb', 38: 'Sr', 39: 'Y', 40: 'Zr',
+    41: 'Nb', 42: 'Mo', 43: 'Tc', 44: 'Ru', 45: 'Rh', 46: 'Pd', 47: 'Ag', 48: 'Cd', 49: 'In', 50: 'Sn',
+    51: 'Sb', 52: 'Te', 53: 'I', 54: 'Xe', 55: 'Cs', 56: 'Ba', 57: 'La', 58: 'Ce', 59: 'Pr', 60: 'Nd',
+    61: 'Pm', 62: 'Sm', 63: 'Eu', 64: 'Gd', 65: 'Tb', 66: 'Dy', 67: 'Ho', 68: 'Er', 69: 'Tm', 70: 'Yb',
+    71: 'Lu', 72: 'Hf', 73: 'Ta', 74: 'W', 75: 'Re', 76: 'Os', 77: 'Ir', 78: 'Pt', 79: 'Au', 80: 'Hg',
+    81: 'Tl', 82: 'Pb', 83: 'Bi', 84: 'Po', 85: 'At', 86: 'Rn', 87: 'Fr', 88: 'Ra', 89: 'Ac', 90: 'Th',
+    91: 'Pa', 92: 'U', 93: 'Np', 94: 'Pu', 95: 'Am', 96: 'Cm', 97: 'Bk', 98: 'Cf', 99: 'Es', 100: 'Fm',
+    101: 'Md', 102: 'No', 103: 'Lr', 104: 'Rf', 105: 'Db', 106: 'Sg', 107: 'Bh', 108: 'Hs', 109: 'Mt', 110: 'Ds',
+    111: 'Rg', 112: 'Cn', 113: 'Nh', 114: 'Fl', 115: 'Mc', 116: 'Lv', 117: 'Ts', 118: 'Og'
+  }
+
+  // Organize elements by their position in the periodic table
+  const elementsByPosition: Record<string, { element: Element | null; Z: number; symbol: string; isAvailable: boolean }> = {}
+
+  // First populate with all elements
+  Object.entries(ELEMENT_POSITIONS).forEach(([zStr, pos]) => {
+    const Z = parseInt(zStr)
+    const symbol = allElementNames[Z]
+    const key = `${pos.period}-${pos.group}`
+    const availableElement = availableElements.find(el => el.Z === Z)
+
+    elementsByPosition[key] = {
+      element: availableElement || null,
+      Z,
+      symbol,
+      isAvailable: availableSymbols.has(symbol)
+    }
+  })
+
+  // Render a single element cell
+  const renderCell = (period: number, group: number) => {
+    const key = `${period}-${group}`
+    const cellData = elementsByPosition[key]
+
+    if (!cellData) {
+      return <div key={key} className="periodic-cell-empty" />
+    }
+
+    const { symbol, Z, isAvailable } = cellData
+    const isSelected = selectedElements.includes(symbol)
+
+    return (
+      <button
+        key={key}
+        onClick={() => isAvailable && toggleElement(symbol)}
+        disabled={!isAvailable}
+        className={`periodic-cell ${isSelected ? 'periodic-cell-selected' : ''} ${!isAvailable ? 'periodic-cell-disabled' : ''}`}
+        title={isAvailable ? `${cellData.element?.EName || symbol} (${Z})` : `${symbol} (${Z}) - Not available in database`}
+      >
+        <div className="periodic-cell-number">{Z}</div>
+        <div className="periodic-cell-symbol">{symbol}</div>
+      </button>
+    )
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="input flex items-center justify-between w-full"
+      >
+        <span className="text-sm">
+          {selectedElements.length === 0
+            ? 'Select elements...'
+            : `${selectedElements.length} selected: ${selectedElements.join(', ')}`}
+        </span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Selected Elements Badges */}
+      {selectedElements.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {selectedElements.map(symbol => {
+            const element = availableElements.find(e => e.E === symbol)
+            return (
+              <span
+                key={symbol}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium"
+              >
+                {symbol}
+                {element && ` (${element.EName})`}
+                <button
+                  type="button"
+                  onClick={() => toggleElement(symbol)}
+                  className="hover:text-primary-900"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )
+          })}
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* Periodic Table Dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full min-w-[800px]">
+          <div className="mb-3 flex justify-between items-center">
+            <h3 className="font-semibold text-gray-900">Select Elements</h3>
+            <div className="flex gap-3">
+              <button
+                onClick={selectAll}
+                className="text-sm text-primary-600 hover:text-primary-800"
+              >
+                Select All
+              </button>
+              {selectedElements.length > 0 && (
+                <button
+                  onClick={clearSelection}
+                  className="text-sm text-primary-600 hover:text-primary-800"
+                >
+                  Clear Selection
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Main periodic table (periods 1-7, excluding lanthanides/actinides) */}
+          <div className="periodic-table-grid mb-4">
+            {[1, 2, 3, 4, 5, 6, 7].map(period => (
+              <div key={period} className="periodic-row">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map(group => {
+                  // Skip groups 3-12 for periods 1-3 (they don't have elements there)
+                  if (period <= 2 && group >= 3 && group <= 12) {
+                    return <div key={`${period}-${group}`} className="periodic-cell-empty" />
+                  }
+                  if (period === 3 && group >= 3 && group <= 12) {
+                    return <div key={`${period}-${group}`} className="periodic-cell-empty" />
+                  }
+                  // Skip lanthanide/actinide positions
+                  if ((period === 6 || period === 7) && group === 3) {
+                    return (
+                      <div
+                        key={`${period}-${group}`}
+                        className="periodic-cell-placeholder text-xs text-gray-500 flex items-center justify-center"
+                      >
+                        {period === 6 ? '57-71' : '89-103'}
+                      </div>
+                    )
+                  }
+
+                  return renderCell(period, group)
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Lanthanides */}
+          <div className="mb-2">
+            <div className="text-xs text-gray-600 mb-1 font-medium">Lanthanides (57-71)</div>
+            <div className="periodic-row">
+              {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(group =>
+                renderCell(8, group)
+              )}
+            </div>
+          </div>
+
+          {/* Actinides */}
+          <div>
+            <div className="text-xs text-gray-600 mb-1 font-medium">Actinides (89-103)</div>
+            <div className="periodic-row">
+              {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(group =>
+                renderCell(9, group)
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styles */}
+      <style>{`
+        .periodic-table-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .periodic-row {
+          display: grid;
+          grid-template-columns: repeat(18, 1fr);
+          gap: 2px;
+        }
+
+        .periodic-cell {
+          position: relative;
+          padding: 4px;
+          min-width: 38px;
+          min-height: 38px;
+          border: 1px solid #d1d5db;
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .periodic-cell:hover {
+          border-color: #3b82f6;
+          background: #eff6ff;
+          transform: scale(1.05);
+          z-index: 10;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .periodic-cell-selected {
+          background: #3b82f6;
+          border-color: #2563eb;
+          color: white;
+        }
+
+        .periodic-cell-selected:hover {
+          background: #2563eb;
+          border-color: #1d4ed8;
+        }
+
+        .periodic-cell-number {
+          font-size: 8px;
+          line-height: 1;
+          margin-bottom: 2px;
+        }
+
+        .periodic-cell-symbol {
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1;
+        }
+
+        .periodic-cell-empty {
+          min-width: 38px;
+          min-height: 38px;
+        }
+
+        .periodic-cell-placeholder {
+          min-width: 38px;
+          min-height: 38px;
+          border: 1px dashed #d1d5db;
+          border-radius: 4px;
+          background: #f9fafb;
+        }
+
+        .periodic-cell-disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          background: #f3f4f6;
+        }
+
+        .periodic-cell-disabled:hover {
+          transform: none;
+          box-shadow: none;
+          border-color: #d1d5db;
+          background: #f3f4f6;
+        }
+      `}</style>
+    </div>
+  )
+}
