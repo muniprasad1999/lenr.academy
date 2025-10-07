@@ -3,9 +3,10 @@ import { Search, Download, Info, Loader, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { FissionReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
-import { queryFission, getAllElements, getElementBySymbol } from '../services/queryService'
+import { queryFission, getAllElements, getElementBySymbol, getNuclideBySymbol } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 import ElementDetailsCard from '../components/ElementDetailsCard'
+import NuclideDetailsCard from '../components/NuclideDetailsCard'
 
 // Default values
 const DEFAULT_ELEMENT: string[] = ['Zr']
@@ -87,6 +88,7 @@ export default function FissionQuery() {
   const [highlightedElement, setHighlightedElement] = useState<string | null>(null)
   const [pinnedElement, setPinnedElement] = useState(false)
   const [selectedElementDetails, setSelectedElementDetails] = useState<Element | null>(null)
+  const [selectedNuclideDetails, setSelectedNuclideDetails] = useState<Nuclide | null>(null)
 
   // Load elements when database is ready
   useEffect(() => {
@@ -102,10 +104,11 @@ export default function FissionQuery() {
     localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
   }, [showBosonFermion])
 
-  // Fetch element details when an element or nuclide is pinned
+  // Fetch element or nuclide details when pinned
   useEffect(() => {
     if (!db) {
       setSelectedElementDetails(null)
+      setSelectedNuclideDetails(null)
       return
     }
 
@@ -113,19 +116,23 @@ export default function FissionQuery() {
     if (pinnedElement && highlightedElement) {
       const elementDetails = getElementBySymbol(db, highlightedElement)
       setSelectedElementDetails(elementDetails)
+      setSelectedNuclideDetails(null)
       return
     }
 
-    // Check if nuclide is pinned - extract element symbol from "Element-Mass" format
+    // Check if nuclide is pinned - fetch nuclide details from NuclidesPlus
     if (pinnedNuclide && highlightedNuclide) {
-      const elementSymbol = highlightedNuclide.split('-')[0]
-      const elementDetails = getElementBySymbol(db, elementSymbol)
-      setSelectedElementDetails(elementDetails)
+      const [elementSymbol, massStr] = highlightedNuclide.split('-')
+      const massNumber = parseInt(massStr)
+      const nuclideDetails = getNuclideBySymbol(db, elementSymbol, massNumber)
+      setSelectedNuclideDetails(nuclideDetails)
+      setSelectedElementDetails(null)
       return
     }
 
     // Nothing pinned
     setSelectedElementDetails(null)
+    setSelectedNuclideDetails(null)
   }, [db, pinnedElement, highlightedElement, pinnedNuclide, highlightedNuclide])
 
   // Update URL when filters change
@@ -648,12 +655,20 @@ export default function FissionQuery() {
               </div>
             </div>
 
-          {/* Element Details */}
+          {/* Details Section */}
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Element Details
+              Details
             </h3>
-            {selectedElementDetails ? (
+            {selectedNuclideDetails ? (
+              <NuclideDetailsCard
+                nuclide={selectedNuclideDetails}
+                onClose={() => {
+                  setPinnedNuclide(false)
+                  setHighlightedNuclide(null)
+                }}
+              />
+            ) : selectedElementDetails ? (
               <ElementDetailsCard
                 element={selectedElementDetails}
                 onClose={() => {

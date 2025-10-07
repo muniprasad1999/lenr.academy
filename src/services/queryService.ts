@@ -550,3 +550,25 @@ export function getAllNuclides(db: Database): Nuclide[] {
 
   return nuclides;
 }
+
+/**
+ * Get a specific nuclide by element symbol and mass number
+ */
+export function getNuclideBySymbol(db: Database, elementSymbol: string, massNumber: number): Nuclide | null {
+  const sql = 'SELECT * FROM NuclidesPlus WHERE E = ? AND A = ?';
+  const results = db.exec(sql, [elementSymbol, massNumber]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    return null;
+  }
+
+  const columns = results[0].columns;
+  const row = results[0].values[0];
+
+  const nuclide: any = {};
+  columns.forEach((col, idx) => {
+    nuclide[col] = row[idx];
+  });
+
+  return nuclide as Nuclide;
+}
