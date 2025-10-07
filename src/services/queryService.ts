@@ -572,3 +572,27 @@ export function getNuclideBySymbol(db: Database, elementSymbol: string, massNumb
 
   return nuclide as Nuclide;
 }
+
+/**
+ * Get all nuclides for a specific element by atomic number
+ */
+export function getNuclidesByElement(db: Database, atomicNumber: number): Nuclide[] {
+  const sql = 'SELECT * FROM NuclidesPlus WHERE Z = ? ORDER BY A';
+  const results = db.exec(sql, [atomicNumber]);
+  const nuclides: Nuclide[] = [];
+
+  if (results.length > 0) {
+    const columns = results[0].columns;
+    const values = results[0].values;
+
+    values.forEach((row: any[]) => {
+      const nuclide: any = {};
+      columns.forEach((col, idx) => {
+        nuclide[col] = row[idx];
+      });
+      nuclides.push(nuclide as Nuclide);
+    });
+  }
+
+  return nuclides;
+}

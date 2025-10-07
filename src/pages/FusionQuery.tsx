@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Info, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Download, Info, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'

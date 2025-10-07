@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Info, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Download, Info, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { TwoToTwoReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'

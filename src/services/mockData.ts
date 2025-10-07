@@ -34,19 +34,23 @@ export const mockFusionReactions: FusionReaction[] = [
   {
     id: 1,
     E1: 'H', Z1: 1, A1: 1,
+    E2: 'H', Z2: 1, A2: 1,
     E: 'He', Z: 2, A: 4,
     MeV: 24.69,
     neutrino: 'none',
     nBorF1: 'f', aBorF1: 'b',
+    nBorF2: 'f', aBorF2: 'b',
     nBorF: 'b', aBorF: 'b'
   },
   {
     id: 2,
     E1: 'D', Z1: 1, A1: 2,
+    E2: 'D', Z2: 1, A2: 2,
     E: 'He', Z: 2, A: 4,
     MeV: 23.85,
     neutrino: 'none',
     nBorF1: 'b', aBorF1: 'f',
+    nBorF2: 'b', aBorF2: 'f',
     nBorF: 'b', aBorF: 'b'
   },
 ]

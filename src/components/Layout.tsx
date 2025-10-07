@@ -1,6 +1,6 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, GitMerge, Scissors, ArrowLeftRight, FlaskConical, Table, TableProperties, Workflow } from 'lucide-react'
+import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, GitMerge, Scissors, ArrowLeftRight, FlaskConical, Table, TableProperties } from 'lucide-react'
 import { useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -22,14 +22,22 @@ const navigation: NavigationItem[] = [
   { name: 'Show Element Data', path: '/element-data', icon: FlaskConical },
   { name: 'Tables in Detail', path: '/tables', icon: Table },
   { name: 'All Tables', path: '/all-tables', icon: TableProperties },
-  { name: 'Cascades', path: '/cascades', icon: Workflow },
+  // { name: 'Cascades', path: '/cascades', icon: Workflow },
 ]
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false)
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('desktopSidebarCollapsed')
+    return saved ? JSON.parse(saved) : false
+  })
   const { theme, toggleTheme } = useTheme()
+
+  // Save sidebar collapse state to localStorage
+  useEffect(() => {
+    localStorage.setItem('desktopSidebarCollapsed', JSON.stringify(desktopSidebarCollapsed))
+  }, [desktopSidebarCollapsed])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

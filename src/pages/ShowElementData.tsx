@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Loader } from 'lucide-react'
 import { useDatabase } from '../contexts/DatabaseContext'
-import type { Element } from '../types'
+import type { Element, Nuclide } from '../types'
+import PeriodicTable from '../components/PeriodicTable'
+import NuclideDetailsCard from '../components/NuclideDetailsCard'
+import { getNuclidesByElement } from '../services/queryService'
 
 export default function ShowElementData() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
-  const [selectedElement, setSelectedElement] = useState<string>('')
+  const [selectedElement, setSelectedElement] = useState<string | null>('H')
+  const [isotopes, setIsotopes] = useState<Nuclide[]>([])
+  const [selectedNuclide, setSelectedNuclide] = useState<Nuclide | null>(null)
 
-  // Get all elements from database
-  const allElements: Element[] = db ? (() => {
+  // Get all elements from database (memoized to prevent recreating on every render)
+  const allElements: Element[] = useMemo(() => {
+    if (!db) return []
     const result = db.exec('SELECT * FROM ElementPropertiesPlus ORDER BY Z')
     if (result.length === 0) return []
 
@@ -34,9 +40,24 @@ export default function ShowElementData() {
       })
       return element as Element
     })
-  })() : []
+  }, [db])
 
   const element = allElements.find(el => el.E === selectedElement)
+
+  // Fetch isotopes when element changes
+  useEffect(() => {
+    if (db && selectedElement) {
+      const currentElement = allElements.find(el => el.E === selectedElement)
+      if (currentElement) {
+        const elementIsotopes = getNuclidesByElement(db, currentElement.Z)
+        setIsotopes(elementIsotopes)
+        setSelectedNuclide(null) // Reset nuclide selection when element changes
+      }
+    } else {
+      setIsotopes([])
+      setSelectedNuclide(null)
+    }
+  }, [db, selectedElement, allElements])
 
   if (dbLoading) {
     return (
@@ -63,23 +84,11 @@ export default function ShowElementData() {
         <p className="text-gray-600 dark:text-gray-400">View detailed chemical and physical properties for any element</p>
       </div>
 
-      <div className="card p-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Element
-        </label>
-        <select
-          className="input max-w-md"
-          value={selectedElement}
-          onChange={(e) => setSelectedElement(e.target.value)}
-        >
-          <option value="">Choose an element...</option>
-          {allElements.map(el => (
-            <option key={el.Z} value={el.E}>
-              {el.Z} - {el.E} ({el.EName})
-            </option>
-          ))}
-        </select>
-      </div>
+      <PeriodicTable
+        availableElements={allElements}
+        selectedElement={selectedElement}
+        onElementClick={setSelectedElement}
+      />
 
       {element && (
         <div className="space-y-6 mt-6">
@@ -103,7 +112,7 @@ export default function ShowElementData() {
                     <dt className="text-gray-600 dark:text-gray-400">Group:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Group}</dd>
                   </div>
-                  {element.AWeight !== null && element.AWeight !== undefined && (
+                  {typeof element.AWeight === 'number' && !isNaN(element.AWeight) && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Atomic Weight:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.AWeight.toFixed(3)}</dd>
@@ -151,7 +160,7 @@ export default function ShowElementData() {
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonNum}</dd>
                     </div>
                   )}
-                  {element.MaxIonization !== null && element.MaxIonization !== undefined && (
+                  {typeof element.MaxIonization === 'number' && !isNaN(element.MaxIonization) && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Max Ionization:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonization.toFixed(1)} kJ/mol</dd>
@@ -166,25 +175,25 @@ export default function ShowElementData() {
             <div className="card p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Thermal Properties</h3>
               <dl className="space-y-2 text-sm">
-                {element.Melting !== null && element.Melting !== undefined && (
+                {typeof element.Melting === 'number' && !isNaN(element.Melting) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Melting Point:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Melting.toFixed(2)} K</dd>
                   </div>
                 )}
-                {element.Boiling !== null && element.Boiling !== undefined && (
+                {typeof element.Boiling === 'number' && !isNaN(element.Boiling) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Boiling Point:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Boiling.toFixed(2)} K</dd>
                   </div>
                 )}
-                {element.SpecHeat !== null && element.SpecHeat !== undefined && (
+                {typeof element.SpecHeat === 'number' && !isNaN(element.SpecHeat) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Specific Heat:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.SpecHeat.toFixed(2)} J/(g·K)</dd>
                   </div>
                 )}
-                {element.ThermConduct !== null && element.ThermConduct !== undefined && (
+                {typeof element.ThermConduct === 'number' && !isNaN(element.ThermConduct) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Thermal Conductivity:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ThermConduct.toFixed(2)} W/(m·K)</dd>
@@ -196,19 +205,19 @@ export default function ShowElementData() {
             <div className="card p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Physical Properties</h3>
               <dl className="space-y-2 text-sm">
-                {element.STPDensity !== null && element.STPDensity !== undefined && (
+                {typeof element.STPDensity === 'number' && !isNaN(element.STPDensity) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Density (STP):</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.STPDensity.toFixed(3)} g/cm³</dd>
                   </div>
                 )}
-                {element.MolarVolume !== null && element.MolarVolume !== undefined && (
+                {typeof element.MolarVolume === 'number' && !isNaN(element.MolarVolume) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Molar Volume:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MolarVolume.toFixed(2)} cm³/mol</dd>
                   </div>
                 )}
-                {element.ElectConduct !== null && element.ElectConduct !== undefined && (
+                {typeof element.ElectConduct === 'number' && !isNaN(element.ElectConduct) && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Electrical Conductivity:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ElectConduct.toFixed(2)} MS/m</dd>
@@ -223,6 +232,65 @@ export default function ShowElementData() {
               </dl>
             </div>
           </div>
+
+          {/* Nuclides Section */}
+          {isotopes.length > 0 && (
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Nuclides ({isotopes.length} available)
+              </h3>
+
+              {/* Isotope selection cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+                {isotopes.map(nuclide => {
+                  const isSelected = selectedNuclide?.id === nuclide.id
+                  const isStable = typeof nuclide.LHL === 'number' && nuclide.LHL > 9
+
+                  return (
+                    <button
+                      key={nuclide.id}
+                      onClick={() => setSelectedNuclide(nuclide)}
+                      className={`
+                        p-3 rounded-lg border-2 transition-all duration-150
+                        ${isSelected
+                          ? 'bg-blue-500 text-white border-blue-600 ring-2 ring-blue-400 shadow-md'
+                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400'
+                        }
+                      `}
+                    >
+                      <div className="text-center">
+                        <div className="text-lg font-bold">{nuclide.E}-{nuclide.A}</div>
+                        <div className="text-xs opacity-75">Z={nuclide.Z}</div>
+                        <div className="mt-1 flex flex-wrap gap-1 justify-center">
+                          <span className={`px-1.5 py-0.5 rounded text-xs ${
+                            nuclide.nBorF === 'b'
+                              ? isSelected ? 'bg-blue-600 text-blue-100' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                              : isSelected ? 'bg-orange-600 text-orange-100' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
+                          }`}>
+                            {nuclide.nBorF === 'b' ? 'B' : 'F'}
+                          </span>
+                          {isStable && (
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                              isSelected ? 'bg-green-600 text-green-100' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                            }`}>
+                              Stable
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Selected nuclide details */}
+              {selectedNuclide && (
+                <div className="mt-4">
+                  <NuclideDetailsCard nuclide={selectedNuclide} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
