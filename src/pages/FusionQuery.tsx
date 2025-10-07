@@ -22,7 +22,8 @@ export default function FusionQuery() {
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [resultElements, setResultElements] = useState<Element[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement, setSelectedElement] = useState('')
+  const [selectedElement1, setSelectedElement1] = useState<string[]>([])
+  const [selectedElement2, setSelectedElement2] = useState<string[]>([])
   const [isQuerying, setIsQuerying] = useState(false)
   const [executionTime, setExecutionTime] = useState(0)
 
@@ -40,10 +41,14 @@ export default function FusionQuery() {
     setIsQuerying(true)
 
     try {
-      // Build filter with selected element
+      // Build filter with selected elements
+      // Combine both E1 and E selections
+      const allSelectedElements = [...selectedElement1, ...selectedElement2]
       const queryFilter: QueryFilter = {
         ...filter,
-        elements: selectedElement ? [selectedElement] : undefined
+        elements: allSelectedElements.length > 0 ? allSelectedElements : undefined,
+        element1List: selectedElement1.length > 0 ? selectedElement1 : undefined,
+        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined
       }
 
       const result = queryFusion(db, queryFilter)
@@ -117,21 +122,48 @@ export default function FusionQuery() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Element Selection */}
+          {/* Input Element 1 Selection (E1) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Input Element (E1)
+              Input Element 1 (E1) - Multi-select
             </label>
             <select
               className="input"
-              value={selectedElement}
-              onChange={(e) => setSelectedElement(e.target.value)}
+              multiple
+              size={6}
+              value={selectedElement1}
+              onChange={(e) => {
+                const options = Array.from(e.target.selectedOptions, option => option.value)
+                setSelectedElement1(options)
+              }}
             >
-              <option value="">All Elements</option>
               {elements.map(el => (
-                <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
+                <option key={`e1-${el.Z}`} value={el.E}>{el.E} - {el.EName}</option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+          </div>
+
+          {/* Target Element Selection (E) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Target/Output Element (E) - Multi-select
+            </label>
+            <select
+              className="input"
+              multiple
+              size={6}
+              value={selectedElement2}
+              onChange={(e) => {
+                const options = Array.from(e.target.selectedOptions, option => option.value)
+                setSelectedElement2(options)
+              }}
+            >
+              {elements.map(el => (
+                <option key={`e2-${el.Z}`} value={el.E}>{el.E} - {el.EName}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
           </div>
 
           {/* MeV Range */}
@@ -230,7 +262,9 @@ export default function FusionQuery() {
                 orderBy: 'MeV',
                 orderDirection: 'desc'
               })
-              setSelectedElement('')
+              setSelectedElement1([])
+              setSelectedElement2([])
+              setShowResults(false)
             }}
             className="btn btn-secondary px-6 py-2"
           >
@@ -244,11 +278,13 @@ export default function FusionQuery() {
             <Info className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
           </div>
-          <code className="text-xs text-gray-600 block font-mono">
+          <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
             SELECT * FROM FusionAll
-            {(selectedElement || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
-            {selectedElement && `E1 = '${selectedElement}'`}
-            {selectedElement && filter.minMeV !== undefined && ' AND '}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
+            {selectedElement1.length > 0 && selectedElement2.length > 0 && ' AND '}
+            {selectedElement2.length > 0 && `E IN (${selectedElement2.map(e => `'${e}'`).join(', ')})`}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0) && filter.minMeV !== undefined && ' AND '}
             {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
             {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}

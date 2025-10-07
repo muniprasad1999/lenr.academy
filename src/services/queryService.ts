@@ -29,11 +29,28 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
     conditions.push(`neutrino IN (${types})`);
   }
 
-  // Elements
+  // Element-specific lists (E1 and E/E2)
+  if (filter.element1List && filter.element1List.length > 0) {
+    const elements = filter.element1List.map(e => `'${e}'`).join(',');
+    conditions.push(`E1 IN (${elements})`);
+  }
+
+  if (filter.element2List && filter.element2List.length > 0) {
+    const elements = filter.element2List.map(e => `'${e}'`).join(',');
+    if (tableType === 'fusion') {
+      conditions.push(`E IN (${elements})`);
+    } else if (tableType === 'fission') {
+      conditions.push(`(E1 IN (${elements}) OR E2 IN (${elements}))`);
+    } else {
+      conditions.push(`E2 IN (${elements})`);
+    }
+  }
+
+  // Legacy elements filter (for backwards compatibility)
   if (filter.elements && filter.elements.length > 0) {
     const elements = filter.elements.map(e => `'${e}'`).join(',');
     if (tableType === 'fusion') {
-      conditions.push(`E1 IN (${elements})`);
+      conditions.push(`(E1 IN (${elements}) OR E IN (${elements}))`);
     } else if (tableType === 'fission') {
       conditions.push(`E IN (${elements})`);
     } else {

@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { Search, Download, Info } from 'lucide-react'
-import type { TwoToTwoReaction, QueryFilter } from '../types'
-import { mockTwoToTwoReactions, mockElements } from '../services/mockData'
+import { Search, Download, Info, Loader } from 'lucide-react'
+import type { TwoToTwoReaction, QueryFilter, Element, Nuclide } from '../types'
+import { useDatabase } from '../contexts/DatabaseContext'
+import { queryTwoToTwo, getAllElements } from '../services/queryService'
 
 export default function TwoToTwoQuery() {
+  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
     minMeV: undefined,
@@ -16,26 +19,35 @@ export default function TwoToTwoQuery() {
 
   const [results, setResults] = useState<TwoToTwoReaction[]>([])
   const [showResults, setShowResults] = useState(false)
+  const [selectedElement1, setSelectedElement1] = useState('')
+  const [selectedElement2, setSelectedElement2] = useState('')
+  const [elements, setElements] = useState<Element[]>([])
+  const [nuclides, setNuclides] = useState<Nuclide[]>([])
+  const [queryTime, setQueryTime] = useState<number>(0)
+  const [isQuerying, setIsQuerying] = useState(false)
 
   const handleQuery = () => {
-    let filtered = [...mockTwoToTwoReactions]
+    if (!db) return
 
-    if (filter.minMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV >= filter.minMeV!)
+    setIsQuerying(true)
+    try {
+      // Update filter with selected elements
+      const elements = [selectedElement1, selectedElement2].filter(e => e)
+      const queryFilter = { ...filter, elements }
+
+      const result = queryTwoToTwo(db, queryFilter)
+
+      setResults(result.reactions)
+      setElements(result.elements)
+      setNuclides(result.nuclides)
+      setQueryTime(result.executionTime)
+      setShowResults(true)
+    } catch (error) {
+      console.error('Query failed:', error)
+      alert('Query failed: ' + (error as Error).message)
+    } finally {
+      setIsQuerying(false)
     }
-
-    if (filter.maxMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV <= filter.maxMeV!)
-    }
-
-    if (filter.orderDirection === 'desc') {
-      filtered.sort((a, b) => b.MeV - a.MeV)
-    } else {
-      filtered.sort((a, b) => a.MeV - b.MeV)
-    }
-
-    setResults(filtered.slice(0, filter.limit || 100))
-    setShowResults(true)
   }
 
   const exportToCSV = () => {
@@ -53,8 +65,29 @@ export default function TwoToTwoQuery() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'twotwo_reactions.csv'
+    a.download = `twotwo_reactions_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
+  }
+
+  // Get available elements from database
+  const availableElements: Element[] = db ? getAllElements(db) : []
+
+  if (dbLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-600">Loading database...</span>
+      </div>
+    )
+  }
+
+  if (dbError) {
+    return (
+      <div className="card p-6 border-red-200 bg-red-50">
+        <h2 className="text-xl font-semibold text-red-900 mb-2">Database Error</h2>
+        <p className="text-red-700">{dbError.message}</p>
+      </div>
+    )
   }
 
   return (
@@ -73,9 +106,13 @@ export default function TwoToTwoQuery() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Input Element 1 (E1)
             </label>
-            <select className="input">
+            <select
+              className="input"
+              value={selectedElement1}
+              onChange={(e) => setSelectedElement1(e.target.value)}
+            >
               <option value="">All Elements</option>
-              {mockElements.map(el => (
+              {availableElements.map(el => (
                 <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
               ))}
             </select>
@@ -85,9 +122,13 @@ export default function TwoToTwoQuery() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Input Element 2 (E2)
             </label>
-            <select className="input">
+            <select
+              className="input"
+              value={selectedElement2}
+              onChange={(e) => setSelectedElement2(e.target.value)}
+            >
               <option value="">All Elements</option>
-              {mockElements.map(el => (
+              {availableElements.map(el => (
                 <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
               ))}
             </select>
@@ -117,6 +158,32 @@ export default function TwoToTwoQuery() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Neutrino Involvement
+            </label>
+            <div className="space-y-2">
+              {['none', 'left', 'right'].map(type => (
+                <label key={type} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={filter.neutrinoTypes?.includes(type as any)}
+                    onChange={(e) => {
+                      const types = filter.neutrinoTypes || []
+                      if (e.target.checked) {
+                        setFilter({...filter, neutrinoTypes: [...types, type as any]})
+                      } else {
+                        setFilter({...filter, neutrinoTypes: types.filter(t => t !== type)})
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm capitalize">{type}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Result Limit
             </label>
             <input
@@ -134,20 +201,34 @@ export default function TwoToTwoQuery() {
           <button
             onClick={handleQuery}
             className="btn btn-primary px-6 py-2"
+            disabled={isQuerying}
           >
-            <Search className="w-4 h-4 mr-2 inline" />
-            Execute Query
+            {isQuerying ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 inline animate-spin" />
+                Querying...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2 inline" />
+                Execute Query
+              </>
+            )}
           </button>
           <button
-            onClick={() => setFilter({
-              elements: [],
-              minMeV: undefined,
-              maxMeV: undefined,
-              neutrinoTypes: ['none', 'left', 'right'],
-              limit: 100,
-              orderBy: 'MeV',
-              orderDirection: 'desc'
-            })}
+            onClick={() => {
+              setFilter({
+                elements: [],
+                minMeV: undefined,
+                maxMeV: undefined,
+                neutrinoTypes: ['none', 'left', 'right'],
+                limit: 100,
+                orderBy: 'MeV',
+                orderDirection: 'desc'
+              })
+              setSelectedElement1('')
+              setSelectedElement2('')
+            }}
             className="btn btn-secondary px-6 py-2"
           >
             Reset
@@ -162,6 +243,8 @@ export default function TwoToTwoQuery() {
           <code className="text-xs text-gray-600 block font-mono">
             SELECT * FROM TwoToTwoAll WHERE {filter.minMeV ? `MeV >= ${filter.minMeV}` : '1=1'}
             {filter.maxMeV ? ` AND MeV <= ${filter.maxMeV}` : ''}
+            {selectedElement1 ? ` AND E1 = '${selectedElement1}'` : ''}
+            {selectedElement2 ? ` AND E2 = '${selectedElement2}'` : ''}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
           </code>
         </div>
@@ -172,9 +255,14 @@ export default function TwoToTwoQuery() {
         <div className="space-y-6">
           <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Results: {results.length} reactions found
-              </h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Results: {results.length} reactions found
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Query executed in {queryTime.toFixed(2)}ms
+                </p>
+              </div>
               <button
                 onClick={exportToCSV}
                 className="btn btn-secondary px-4 py-2 text-sm"
@@ -189,29 +277,41 @@ export default function TwoToTwoQuery() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={3} className="bg-blue-50">Inputs</th>
-                    <th colSpan={3} className="bg-green-50">Outputs</th>
+                    <th colSpan={6} className="bg-blue-50">Inputs</th>
+                    <th colSpan={6} className="bg-green-50">Outputs</th>
                     <th rowSpan={2}>Energy (MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
                   </tr>
                   <tr>
-                    <th className="bg-blue-50">E1 (Z1, A1)</th>
-                    <th className="bg-blue-50">+</th>
-                    <th className="bg-blue-50">E2 (Z2, A2)</th>
-                    <th className="bg-green-50">E3 (Z3, A3)</th>
-                    <th className="bg-green-50">+</th>
-                    <th className="bg-green-50">E4 (Z4, A4)</th>
+                    <th>E1</th>
+                    <th>Z1</th>
+                    <th>A1</th>
+                    <th>E2</th>
+                    <th>Z2</th>
+                    <th>A2</th>
+                    <th>E3</th>
+                    <th>Z3</th>
+                    <th>A3</th>
+                    <th>E4</th>
+                    <th>Z4</th>
+                    <th>A4</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold">{reaction.E1} ({reaction.Z1}, {reaction.A1})</td>
-                      <td className="text-center">+</td>
-                      <td className="font-semibold">{reaction.E2} ({reaction.Z2}, {reaction.A2})</td>
-                      <td className="font-semibold">{reaction.E3} ({reaction.Z3}, {reaction.A3})</td>
-                      <td className="text-center">+</td>
-                      <td className="font-semibold">{reaction.E4} ({reaction.Z4}, {reaction.A4})</td>
+                      <td className="font-semibold bg-blue-50">{reaction.E1}</td>
+                      <td className="bg-blue-50">{reaction.Z1}</td>
+                      <td className="bg-blue-50">{reaction.A1}</td>
+                      <td className="font-semibold bg-blue-50">{reaction.E2}</td>
+                      <td className="bg-blue-50">{reaction.Z2}</td>
+                      <td className="bg-blue-50">{reaction.A2}</td>
+                      <td className="font-semibold bg-green-50">{reaction.E3}</td>
+                      <td className="bg-green-50">{reaction.Z3}</td>
+                      <td className="bg-green-50">{reaction.A3}</td>
+                      <td className="font-semibold bg-green-50">{reaction.E4}</td>
+                      <td className="bg-green-50">{reaction.Z4}</td>
+                      <td className="bg-green-50">{reaction.A4}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td>{reaction.neutrino}</td>
                     </tr>
@@ -221,14 +321,33 @@ export default function TwoToTwoQuery() {
             </div>
           </div>
 
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Elements Appearing in Results</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {Array.from(new Set(results.flatMap(r => [r.E1, r.E2, r.E3, r.E4]))).sort().map(el => (
-                <div key={el} className="px-3 py-2 bg-gray-50 rounded text-sm font-medium text-gray-700">
-                  {el}
-                </div>
-              ))}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Nuclides in Results ({nuclides.length})
+              </h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {nuclides.map((nuc, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="font-semibold">{nuc.E}<sup>{nuc.A}</sup></span>
+                    <span className="text-sm text-gray-600">Z={nuc.Z}, A={nuc.A}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Elements in Results ({elements.length})
+              </h3>
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {elements.map((el) => (
+                  <div key={el.Z} className="px-3 py-2 bg-gray-50 rounded text-sm">
+                    <div className="font-semibold">{el.E}</div>
+                    <div className="text-xs text-gray-600">{el.EName}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

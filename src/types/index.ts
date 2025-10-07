@@ -109,6 +109,8 @@ export type Reaction = FusionReaction | FissionReaction | TwoToTwoReaction;
 
 export interface QueryFilter {
   elements?: string[];
+  element1List?: string[];  // For E1 in fusion, E1 in two-to-two
+  element2List?: string[];  // For E in fusion, E2 in two-to-two
   minMeV?: number;
   maxMeV?: number;
   neutrinoTypes?: NeutrinoType[];

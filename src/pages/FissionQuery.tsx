@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { Search, Download, Info } from 'lucide-react'
-import type { FissionReaction, QueryFilter } from '../types'
-import { mockFissionReactions, mockElements } from '../services/mockData'
+import { Search, Download, Info, Loader } from 'lucide-react'
+import type { FissionReaction, QueryFilter, Element, Nuclide } from '../types'
+import { useDatabase } from '../contexts/DatabaseContext'
+import { queryFission, getAllElements } from '../services/queryService'
 
 export default function FissionQuery() {
+  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
     minMeV: undefined,
@@ -17,26 +20,35 @@ export default function FissionQuery() {
   const [results, setResults] = useState<FissionReaction[]>([])
   const [showResults, setShowResults] = useState(false)
   const [selectedElement, setSelectedElement] = useState('')
+  const [elements, setElements] = useState<Element[]>([])
+  const [nuclides, setNuclides] = useState<Nuclide[]>([])
+  const [queryTime, setQueryTime] = useState<number>(0)
+  const [isQuerying, setIsQuerying] = useState(false)
 
   const handleQuery = () => {
-    let filtered = [...mockFissionReactions]
+    if (!db) return
 
-    if (filter.minMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV >= filter.minMeV!)
+    setIsQuerying(true)
+    try {
+      // Update filter with selected element
+      const queryFilter = {
+        ...filter,
+        elements: selectedElement ? [selectedElement] : []
+      }
+
+      const result = queryFission(db, queryFilter)
+
+      setResults(result.reactions)
+      setElements(result.elements)
+      setNuclides(result.nuclides)
+      setQueryTime(result.executionTime)
+      setShowResults(true)
+    } catch (error) {
+      console.error('Query failed:', error)
+      alert('Query failed: ' + (error as Error).message)
+    } finally {
+      setIsQuerying(false)
     }
-
-    if (filter.maxMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV <= filter.maxMeV!)
-    }
-
-    if (filter.orderDirection === 'desc') {
-      filtered.sort((a, b) => b.MeV - a.MeV)
-    } else {
-      filtered.sort((a, b) => a.MeV - b.MeV)
-    }
-
-    setResults(filtered.slice(0, filter.limit || 100))
-    setShowResults(true)
   }
 
   const exportToCSV = () => {
@@ -54,8 +66,29 @@ export default function FissionQuery() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'fission_reactions.csv'
+    a.download = `fission_reactions_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
+  }
+
+  // Get available elements from database
+  const availableElements: Element[] = db ? getAllElements(db) : []
+
+  if (dbLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="ml-3 text-gray-600">Loading database...</span>
+      </div>
+    )
+  }
+
+  if (dbError) {
+    return (
+      <div className="card p-6 border-red-200 bg-red-50">
+        <h2 className="text-xl font-semibold text-red-900 mb-2">Database Error</h2>
+        <p className="text-red-700">{dbError.message}</p>
+      </div>
+    )
   }
 
   return (
@@ -80,7 +113,7 @@ export default function FissionQuery() {
               onChange={(e) => setSelectedElement(e.target.value)}
             >
               <option value="">All Elements</option>
-              {mockElements.map(el => (
+              {availableElements.map(el => (
                 <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
               ))}
             </select>
@@ -153,9 +186,19 @@ export default function FissionQuery() {
           <button
             onClick={handleQuery}
             className="btn btn-primary px-6 py-2"
+            disabled={isQuerying}
           >
-            <Search className="w-4 h-4 mr-2 inline" />
-            Execute Query
+            {isQuerying ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 inline animate-spin" />
+                Querying...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2 inline" />
+                Execute Query
+              </>
+            )}
           </button>
           <button
             onClick={() => setFilter({
@@ -191,9 +234,14 @@ export default function FissionQuery() {
         <div className="space-y-6">
           <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Results: {results.length} reactions found
-              </h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Results: {results.length} reactions found
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Query executed in {queryTime.toFixed(2)}ms
+                </p>
+              </div>
               <button
                 onClick={exportToCSV}
                 className="btn btn-secondary px-4 py-2 text-sm"
@@ -242,14 +290,33 @@ export default function FissionQuery() {
             </div>
           </div>
 
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Elements Appearing in Results</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {Array.from(new Set(results.flatMap(r => [r.E, r.E1, r.E2]))).sort().map(el => (
-                <div key={el} className="px-3 py-2 bg-gray-50 rounded text-sm font-medium text-gray-700">
-                  {el}
-                </div>
-              ))}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Nuclides in Results ({nuclides.length})
+              </h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {nuclides.map((nuc, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="font-semibold">{nuc.E}<sup>{nuc.A}</sup></span>
+                    <span className="text-sm text-gray-600">Z={nuc.Z}, A={nuc.A}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Elements in Results ({elements.length})
+              </h3>
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {elements.map((el) => (
+                  <div key={el.Z} className="px-3 py-2 bg-gray-50 rounded text-sm">
+                    <div className="font-semibold">{el.E}</div>
+                    <div className="text-xs text-gray-600">{el.EName}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
