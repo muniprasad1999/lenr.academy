@@ -25,6 +25,7 @@ export default function FusionQuery() {
   const [showResults, setShowResults] = useState(false)
   const [selectedElement1, setSelectedElement1] = useState<string[]>([])
   const [selectedElement2, setSelectedElement2] = useState<string[]>([])
+  const [selectedOutputElement, setSelectedOutputElement] = useState<string[]>([])
   const [isQuerying, setIsQuerying] = useState(false)
   const [executionTime, setExecutionTime] = useState(0)
 
@@ -36,6 +37,13 @@ export default function FusionQuery() {
     }
   }, [db])
 
+  // Auto-execute query when filters change
+  useEffect(() => {
+    if (db) {
+      handleQuery()
+    }
+  }, [db, selectedElement1, selectedElement2, selectedOutputElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit])
+
   const handleQuery = () => {
     if (!db) return
 
@@ -43,13 +51,11 @@ export default function FusionQuery() {
 
     try {
       // Build filter with selected elements
-      // Combine both E1 and E selections
-      const allSelectedElements = [...selectedElement1, ...selectedElement2]
       const queryFilter: QueryFilter = {
         ...filter,
-        elements: allSelectedElements.length > 0 ? allSelectedElements : undefined,
         element1List: selectedElement1.length > 0 ? selectedElement1 : undefined,
-        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined
+        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined,
+        outputElementList: selectedOutputElement.length > 0 ? selectedOutputElement : undefined
       }
 
       const result = queryFusion(db, queryFilter)
@@ -70,11 +76,11 @@ export default function FusionQuery() {
   const exportToCSV = () => {
     if (results.length === 0) return
 
-    const headers = ['E1', 'Z1', 'A1', 'E', 'Z', 'A', 'MeV', 'neutrino', 'nBorF1', 'aBorF1', 'nBorF', 'aBorF']
+    const headers = ['E1', 'Z1', 'A1', 'E2', 'Z2', 'A2', 'E', 'Z', 'A', 'MeV', 'neutrino', 'nBorF1', 'aBorF1', 'nBorF2', 'aBorF2', 'nBorF', 'aBorF']
     const csvContent = [
       headers.join(','),
       ...results.map(r => [
-        r.E1, r.Z1, r.A1, r.E, r.Z, r.A, r.MeV, r.neutrino, r.nBorF1, r.aBorF1, r.nBorF, r.aBorF
+        r.E1, r.Z1, r.A1, r.E2, r.Z2, r.A2, r.E, r.Z, r.A, r.MeV, r.neutrino, r.nBorF1, r.aBorF1, r.nBorF2, r.aBorF2, r.nBorF, r.aBorF
       ].join(','))
     ].join('\n')
 
@@ -122,7 +128,7 @@ export default function FusionQuery() {
       <div className="card p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Input Element 1 Selection (E1) */}
           <PeriodicTableSelector
             label="Input Element 1 (E1)"
@@ -131,12 +137,20 @@ export default function FusionQuery() {
             onSelectionChange={setSelectedElement1}
           />
 
-          {/* Target Element Selection (E) */}
+          {/* Input Element 2 Selection (E2) */}
           <PeriodicTableSelector
-            label="Target/Output Element (E)"
+            label="Input Element 2 (E2)"
             availableElements={elements}
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
+          />
+
+          {/* Output Element Selection (E) */}
+          <PeriodicTableSelector
+            label="Output Element (E)"
+            availableElements={elements}
+            selectedElements={selectedOutputElement}
+            onSelectionChange={setSelectedOutputElement}
           />
 
           {/* MeV Range */}
@@ -208,23 +222,6 @@ export default function FusionQuery() {
         {/* Action Buttons */}
         <div className="flex gap-3 mt-6">
           <button
-            onClick={handleQuery}
-            disabled={isQuerying}
-            className="btn btn-primary px-6 py-2"
-          >
-            {isQuerying ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
-                Querying...
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4 mr-2 inline" />
-                Execute Query
-              </>
-            )}
-          </button>
-          <button
             onClick={() => {
               setFilter({
                 elements: [],
@@ -237,12 +234,18 @@ export default function FusionQuery() {
               })
               setSelectedElement1([])
               setSelectedElement2([])
-              setShowResults(false)
+              setSelectedOutputElement([])
             }}
             className="btn btn-secondary px-6 py-2"
           >
-            Reset
+            Reset Filters
           </button>
+          {isQuerying && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Querying...</span>
+            </div>
+          )}
         </div>
 
         {/* SQL Preview */}
@@ -253,11 +256,13 @@ export default function FusionQuery() {
           </div>
           <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
             SELECT * FROM FusionAll
-            {(selectedElement1.length > 0 || selectedElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || selectedOutputElement.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
             {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
-            {selectedElement1.length > 0 && selectedElement2.length > 0 && ' AND '}
-            {selectedElement2.length > 0 && `E IN (${selectedElement2.map(e => `'${e}'`).join(', ')})`}
-            {(selectedElement1.length > 0 || selectedElement2.length > 0) && filter.minMeV !== undefined && ' AND '}
+            {selectedElement1.length > 0 && (selectedElement2.length > 0 || selectedOutputElement.length > 0) && ' AND '}
+            {selectedElement2.length > 0 && `E2 IN (${selectedElement2.map(e => `'${e}'`).join(', ')})`}
+            {selectedElement2.length > 0 && selectedOutputElement.length > 0 && ' AND '}
+            {selectedOutputElement.length > 0 && `E IN (${selectedOutputElement.map(e => `'${e}'`).join(', ')})`}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || selectedOutputElement.length > 0) && filter.minMeV !== undefined && ' AND '}
             {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
             {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
@@ -291,15 +296,22 @@ export default function FusionQuery() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Input</th>
+                    <th colSpan={6} className="bg-blue-50">Inputs</th>
+                    <th colSpan={3} className="bg-green-50">Output</th>
+                    <th rowSpan={2}>Energy (MeV)</th>
+                    <th rowSpan={2}>Neutrino</th>
+                    <th colSpan={4} className="bg-gray-50">Boson/Fermion</th>
+                  </tr>
+                  <tr>
+                    <th>E1</th>
                     <th>Z1</th>
                     <th>A1</th>
-                    <th>→</th>
-                    <th>Output</th>
+                    <th>E2</th>
+                    <th>Z2</th>
+                    <th>A2</th>
+                    <th>E</th>
                     <th>Z</th>
                     <th>A</th>
-                    <th>Energy (MeV)</th>
-                    <th>Neutrino</th>
                     <th>nBorF1</th>
                     <th>aBorF1</th>
                     <th>nBorF</th>
@@ -309,19 +321,21 @@ export default function FusionQuery() {
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold text-blue-600">{reaction.E1}</td>
-                      <td>{reaction.Z1}</td>
-                      <td>{reaction.A1}</td>
-                      <td className="text-center text-gray-400">→</td>
-                      <td className="font-semibold text-green-600">{reaction.E}</td>
-                      <td>{reaction.Z}</td>
-                      <td>{reaction.A}</td>
+                      <td className="font-semibold bg-blue-50">{reaction.E1}</td>
+                      <td className="bg-blue-50">{reaction.Z1}</td>
+                      <td className="bg-blue-50">{reaction.A1}</td>
+                      <td className="font-semibold bg-blue-50">{reaction.E2}</td>
+                      <td className="bg-blue-50">{reaction.Z2}</td>
+                      <td className="bg-blue-50">{reaction.A2}</td>
+                      <td className="font-semibold bg-green-50">{reaction.E}</td>
+                      <td className="bg-green-50">{reaction.Z}</td>
+                      <td className="bg-green-50">{reaction.A}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td><span className="px-2 py-1 bg-gray-100 rounded text-xs">{reaction.neutrino}</span></td>
-                      <td>{reaction.nBorF1}</td>
-                      <td>{reaction.aBorF1}</td>
-                      <td>{reaction.nBorF}</td>
-                      <td>{reaction.aBorF}</td>
+                      <td className="bg-gray-50">{reaction.nBorF1}</td>
+                      <td className="bg-gray-50">{reaction.aBorF1}</td>
+                      <td className="bg-gray-50">{reaction.nBorF}</td>
+                      <td className="bg-gray-50">{reaction.aBorF}</td>
                     </tr>
                   ))}
                 </tbody>

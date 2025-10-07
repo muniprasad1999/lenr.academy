@@ -41,9 +41,12 @@ export interface Element {
 
 export interface FusionReaction {
   id: number;
-  E1: string;       // Element 1 symbol
-  Z1: number;       // Element 1 atomic number
-  A1: number;       // Element 1 mass number
+  E1: string;       // Input element 1 symbol
+  Z1: number;       // Input element 1 atomic number
+  A1: number;       // Input element 1 mass number
+  E2: string;       // Input element 2 symbol
+  Z2: number;       // Input element 2 atomic number
+  A2: number;       // Input element 2 mass number
   E: string;        // Output element symbol
   Z: number;        // Output atomic number
   A: number;        // Output mass number
@@ -51,6 +54,8 @@ export interface FusionReaction {
   neutrino: NeutrinoType;
   nBorF1: BosonFermionType;
   aBorF1: BosonFermionType;
+  nBorF2: BosonFermionType;
+  aBorF2: BosonFermionType;
   nBorF: BosonFermionType;
   aBorF: BosonFermionType;
   BEin?: number;    // Input binding energy threshold
@@ -110,7 +115,8 @@ export type Reaction = FusionReaction | FissionReaction | TwoToTwoReaction;
 export interface QueryFilter {
   elements?: string[];
   element1List?: string[];  // For E1 in fusion, E1 in two-to-two
-  element2List?: string[];  // For E in fusion, E2 in two-to-two
+  element2List?: string[];  // For E2 in fusion, E2 in two-to-two
+  outputElementList?: string[];  // For E in fusion (output element)
   minMeV?: number;
   maxMeV?: number;
   neutrinoTypes?: NeutrinoType[];

@@ -35,6 +35,13 @@ export default function FissionQuery() {
     }
   }, [db])
 
+  // Auto-execute query when filters change
+  useEffect(() => {
+    if (db) {
+      handleQuery()
+    }
+  }, [db, selectedElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit])
+
   const handleQuery = () => {
     if (!db) return
 
@@ -183,23 +190,6 @@ export default function FissionQuery() {
 
         <div className="flex gap-3 mt-6">
           <button
-            onClick={handleQuery}
-            className="btn btn-primary px-6 py-2"
-            disabled={isQuerying}
-          >
-            {isQuerying ? (
-              <>
-                <Loader className="w-4 h-4 mr-2 inline animate-spin" />
-                Querying...
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4 mr-2 inline" />
-                Execute Query
-              </>
-            )}
-          </button>
-          <button
             onClick={() => {
               setFilter({
                 elements: [],
@@ -211,12 +201,17 @@ export default function FissionQuery() {
                 orderDirection: 'desc'
               })
               setSelectedElement([])
-              setShowResults(false)
             }}
             className="btn btn-secondary px-6 py-2"
           >
-            Reset
+            Reset Filters
           </button>
+          {isQuerying && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Querying...</span>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 p-4 bg-gray-50 rounded-md">

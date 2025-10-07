@@ -38,11 +38,19 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
   if (filter.element2List && filter.element2List.length > 0) {
     const elements = filter.element2List.map(e => `'${e}'`).join(',');
     if (tableType === 'fusion') {
-      conditions.push(`E IN (${elements})`);
+      conditions.push(`E2 IN (${elements})`);
     } else if (tableType === 'fission') {
       conditions.push(`(E1 IN (${elements}) OR E2 IN (${elements}))`);
     } else {
       conditions.push(`E2 IN (${elements})`);
+    }
+  }
+
+  // Output element filter (for fusion output element E)
+  if (filter.outputElementList && filter.outputElementList.length > 0) {
+    const elements = filter.outputElementList.map(e => `'${e}'`).join(',');
+    if (tableType === 'fusion') {
+      conditions.push(`E IN (${elements})`);
     }
   }
 

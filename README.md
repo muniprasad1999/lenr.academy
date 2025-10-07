@@ -31,6 +31,7 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 - **Vite** - Fast build tool and dev server
 - **TailwindCSS** - Utility-first styling
 - **React Router** - Client-side routing
+- **sql.js** - Client-side SQLite database (WebAssembly)
 - **Lucide React** - Icon library
 
 ## Getting Started
@@ -73,7 +74,10 @@ src/
 │   ├── AllTables.tsx
 │   └── CascadesAll.tsx
 ├── services/        # Data layer
-│   └── mockData.ts  # Sample data (to be replaced with sql.js)
+│   ├── database.ts     # sql.js database initialization
+│   └── queryService.ts # SQL query execution engine
+├── contexts/        # React contexts
+│   └── DatabaseContext.tsx  # Global database state
 ├── types/           # TypeScript type definitions
 │   └── index.ts
 ├── App.tsx          # Main app component with routing
@@ -83,22 +87,26 @@ src/
 
 ## Current Status
 
-**Phase 1-2 Complete**:
+**Phase 1-3 Complete**:
 - ✅ Project setup with Vite + React + TypeScript + TailwindCSS
 - ✅ Core TypeScript interfaces and data models
 - ✅ Responsive layout with sidebar navigation
 - ✅ "Big Three" query tools (Fusion, Fission, TwoToTwo)
 - ✅ Supporting pages (Element Data, Tables, All Tables, Cascades)
-- ✅ Mock data service layer
+- ✅ **sql.js integration** with client-side SQLite database
+- ✅ **Real SQL query execution** across all query pages
+- ✅ **PeriodicTableSelector component** with multi-select
+- ✅ Advanced filtering (multi-element, energy ranges, neutrino types)
+- ✅ Dynamic SQL preview and query execution timing
+- ✅ CSV export functionality
 
 **Next Steps**:
-- [ ] Integrate sql.js for client-side SQLite database
-- [ ] Load real Parkhomov reaction tables
-- [ ] Implement actual SQL query execution
+- [ ] Load complete Parkhomov reaction tables from HTML docs
 - [ ] Add data visualization components (charts, graphs)
 - [ ] Implement cascade simulation logic
-- [ ] Add result export/sharing features
+- [ ] Add query history and saved queries
 - [ ] Performance optimization with web workers
+- [ ] PWA support for offline use
 
 ## Data Sources
 

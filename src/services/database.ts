@@ -16,14 +16,23 @@ export async function initDatabase(): Promise<Database> {
     locateFile: (file) => `/${file}`,
   });
 
-  // Create new database
-  db = new SQL.Database();
-
-  // Create tables
-  createTables(db);
-
-  // Populate with sample data
-  populateSampleData(db);
+  // Load pre-built database from public directory
+  try {
+    console.log('Loading Parkhomov database...');
+    const response = await fetch('/parkhomov.db');
+    if (!response.ok) {
+      throw new Error(`Failed to load database: ${response.statusText}`);
+    }
+    const buffer = await response.arrayBuffer();
+    db = new SQL.Database(new Uint8Array(buffer));
+    console.log('✅ Parkhomov database loaded successfully');
+  } catch (error) {
+    console.error('Failed to load pre-built database, creating new one:', error);
+    // Fallback: create empty database with tables and add ElementsPlus data
+    db = new SQL.Database();
+    createTables(db);
+    populateSampleData(db);
+  }
 
   return db;
 }
@@ -83,13 +92,16 @@ function createTables(db: Database): void {
     );
   `);
 
-  // FusionAll table
+  // FusionAll table (E1 + E2 → E)
   db.run(`
     CREATE TABLE IF NOT EXISTS FusionAll (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       E1 TEXT NOT NULL,
       Z1 INTEGER NOT NULL,
       A1 INTEGER NOT NULL,
+      E2 TEXT NOT NULL,
+      Z2 INTEGER NOT NULL,
+      A2 INTEGER NOT NULL,
       E TEXT NOT NULL,
       Z INTEGER NOT NULL,
       A INTEGER NOT NULL,
@@ -97,6 +109,8 @@ function createTables(db: Database): void {
       neutrino TEXT NOT NULL,
       nBorF1 TEXT NOT NULL,
       aBorF1 TEXT NOT NULL,
+      nBorF2 TEXT NOT NULL,
+      aBorF2 TEXT NOT NULL,
       nBorF TEXT NOT NULL,
       aBorF TEXT NOT NULL,
       BEin REAL
@@ -160,6 +174,7 @@ function createTables(db: Database): void {
 
   // Create indexes for performance
   db.run('CREATE INDEX IF NOT EXISTS idx_fusion_e1 ON FusionAll(E1);');
+  db.run('CREATE INDEX IF NOT EXISTS idx_fusion_e2 ON FusionAll(E2);');
   db.run('CREATE INDEX IF NOT EXISTS idx_fusion_mev ON FusionAll(MeV);');
   db.run('CREATE INDEX IF NOT EXISTS idx_fission_e ON FissionAll(E);');
   db.run('CREATE INDEX IF NOT EXISTS idx_fission_mev ON FissionAll(MeV);');
@@ -249,27 +264,41 @@ function populateSampleData(db: Database): void {
   nuclides.forEach(row => insertNuclide.run(row));
   insertNuclide.free();
 
-  // Insert Fusion Reactions (expanded set)
+  // Insert Fusion Reactions (E1 + E2 → E)
   const fusionReactions = [
-    ['H', 1, 1, 'D', 1, 2, 0.42, 'none', 'f', 'b', 'b', 'f', 0],
-    ['H', 1, 1, 'He', 2, 4, 24.69, 'none', 'f', 'b', 'b', 'b', 0],
-    ['D', 1, 2, 'He', 2, 4, 23.85, 'none', 'b', 'f', 'b', 'b', 2.224],
-    ['D', 1, 2, 'Li', 3, 6, 1.47, 'none', 'b', 'f', 'b', 'f', 2.224],
-    ['H', 1, 1, 'Li', 3, 6, 4.02, 'none', 'f', 'b', 'b', 'f', 0],
-    ['H', 1, 1, 'Li', 3, 7, 5.61, 'none', 'f', 'b', 'f', 'b', 0],
-    ['D', 1, 2, 'Li', 3, 7, 4.77, 'none', 'b', 'f', 'f', 'b', 2.224],
-    ['H', 1, 1, 'B', 5, 11, 8.68, 'none', 'f', 'b', 'f', 'b', 0],
-    ['D', 1, 2, 'B', 5, 11, 8.00, 'none', 'b', 'f', 'f', 'b', 2.224],
-    ['H', 1, 1, 'C', 6, 13, 1.94, 'none', 'f', 'b', 'f', 'b', 0],
-    ['D', 1, 2, 'N', 7, 15, 2.27, 'none', 'b', 'f', 'f', 'b', 2.224],
-    ['H', 1, 1, 'O', 8, 17, 0.60, 'none', 'f', 'b', 'f', 'b', 0],
-    ['Li', 3, 7, 'Si', 14, 28, 7.13, 'none', 'f', 'b', 'b', 'b', 39.245],
-    ['Li', 3, 7, 'Al', 13, 27, 6.21, 'none', 'f', 'b', 'f', 'b', 39.245],
+    // H + H → D + e+ + ν
+    ['H', 1, 1, 'H', 1, 1, 'D', 1, 2, 0.42, 'none', 'f', 'b', 'f', 'b', 'b', 'f', 0],
+    // H + H → He
+    ['H', 1, 1, 'H', 1, 1, 'He', 2, 4, 24.69, 'none', 'f', 'b', 'f', 'b', 'b', 'b', 0],
+    // D + D → He
+    ['D', 1, 2, 'D', 1, 2, 'He', 2, 4, 23.85, 'none', 'b', 'f', 'b', 'f', 'b', 'b', 2.224],
+    // D + He → Li
+    ['D', 1, 2, 'He', 2, 4, 'Li', 3, 6, 1.47, 'none', 'b', 'f', 'b', 'b', 'b', 'f', 2.224],
+    // H + Li → Li
+    ['H', 1, 1, 'Li', 3, 6, 'Li', 3, 7, 4.02, 'none', 'f', 'b', 'b', 'f', 'f', 'b', 0],
+    // H + Li-6 → Li-7
+    ['H', 1, 1, 'Li', 3, 6, 'Li', 3, 7, 5.61, 'none', 'f', 'b', 'b', 'f', 'f', 'b', 0],
+    // D + Li → B
+    ['D', 1, 2, 'Li', 3, 7, 'B', 5, 10, 4.77, 'none', 'b', 'f', 'f', 'b', 'b', 'f', 2.224],
+    // H + B → C
+    ['H', 1, 1, 'B', 5, 11, 'C', 6, 12, 8.68, 'none', 'f', 'b', 'f', 'b', 'b', 'b', 0],
+    // D + B → C
+    ['D', 1, 2, 'B', 5, 11, 'C', 6, 13, 8.00, 'none', 'b', 'f', 'f', 'b', 'f', 'b', 2.224],
+    // H + C → N
+    ['H', 1, 1, 'C', 6, 13, 'N', 7, 14, 1.94, 'none', 'f', 'b', 'f', 'b', 'b', 'f', 0],
+    // D + N → O
+    ['D', 1, 2, 'N', 7, 15, 'O', 8, 17, 2.27, 'none', 'b', 'f', 'f', 'b', 'f', 'b', 2.224],
+    // H + O → F
+    ['H', 1, 1, 'O', 8, 17, 'F', 9, 18, 0.60, 'none', 'f', 'b', 'f', 'b', 'f', 'b', 0],
+    // Li + Li → Si
+    ['Li', 3, 7, 'Li', 3, 7, 'Si', 14, 28, 7.13, 'none', 'f', 'b', 'f', 'b', 'b', 'b', 39.245],
+    // Li + B → Al
+    ['Li', 3, 7, 'B', 5, 10, 'Al', 13, 27, 6.21, 'none', 'f', 'b', 'b', 'f', 'f', 'b', 39.245],
   ];
 
   const insertFusion = db.prepare(`
-    INSERT INTO FusionAll (E1, Z1, A1, E, Z, A, MeV, neutrino, nBorF1, aBorF1, nBorF, aBorF, BEin)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO FusionAll (E1, Z1, A1, E2, Z2, A2, E, Z, A, MeV, neutrino, nBorF1, aBorF1, nBorF2, aBorF2, nBorF, aBorF, BEin)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   fusionReactions.forEach(row => insertFusion.run(row));
   insertFusion.free();

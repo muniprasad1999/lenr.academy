@@ -171,13 +171,6 @@ export default function PeriodicTableSelector({
     onSelectionChange([])
   }
 
-  const selectAll = () => {
-    if (maxSelections && maxSelections < availableElements.length) {
-      return // Don't allow select all if there's a max limit
-    }
-    onSelectionChange(availableElements.map(el => el.E))
-  }
-
   // Create a set of available element symbols for quick lookup
   const availableSymbols = new Set(availableElements.map(el => el.E))
 
@@ -255,7 +248,7 @@ export default function PeriodicTableSelector({
       >
         <span className="text-sm">
           {selectedElements.length === 0
-            ? 'Select elements...'
+            ? 'Any'
             : `${selectedElements.length} selected: ${selectedElements.join(', ')}`}
         </span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -298,22 +291,14 @@ export default function PeriodicTableSelector({
         <div className="absolute z-50 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full min-w-[800px]">
           <div className="mb-3 flex justify-between items-center">
             <h3 className="font-semibold text-gray-900">Select Elements</h3>
-            <div className="flex gap-3">
+            {selectedElements.length > 0 && (
               <button
-                onClick={selectAll}
+                onClick={clearSelection}
                 className="text-sm text-primary-600 hover:text-primary-800"
               >
-                Select All
+                Clear Selection
               </button>
-              {selectedElements.length > 0 && (
-                <button
-                  onClick={clearSelection}
-                  className="text-sm text-primary-600 hover:text-primary-800"
-                >
-                  Clear Selection
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Main periodic table (periods 1-7, excluding lanthanides/actinides) */}
