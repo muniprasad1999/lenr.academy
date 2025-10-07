@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { DatabaseProvider } from './contexts/DatabaseContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import FusionQuery from './pages/FusionQuery'
@@ -12,22 +13,24 @@ import CascadesAll from './pages/CascadesAll'
 
 function App() {
   return (
-    <DatabaseProvider>
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/fusion" element={<FusionQuery />} />
-            <Route path="/fission" element={<FissionQuery />} />
-            <Route path="/twotwo" element={<TwoToTwoQuery />} />
-            <Route path="/element-data" element={<ShowElementData />} />
-            <Route path="/tables" element={<TablesInDetail />} />
-            <Route path="/all-tables" element={<AllTables />} />
-            <Route path="/cascades" element={<CascadesAll />} />
-          </Routes>
-        </Layout>
-      </Router>
-    </DatabaseProvider>
+    <ThemeProvider>
+      <DatabaseProvider>
+        <Router>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/fusion" element={<FusionQuery />} />
+              <Route path="/fission" element={<FissionQuery />} />
+              <Route path="/twotwo" element={<TwoToTwoQuery />} />
+              <Route path="/element-data" element={<ShowElementData />} />
+              <Route path="/tables" element={<TablesInDetail />} />
+              <Route path="/all-tables" element={<AllTables />} />
+              <Route path="/cascades" element={<CascadesAll />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </DatabaseProvider>
+    </ThemeProvider>
   )
 }
 

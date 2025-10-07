@@ -8,13 +8,13 @@ export default function Home() {
         <div className="flex justify-center mb-4">
           <Atom className="w-16 h-16 text-primary-600" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
           The Nanosoft Package
         </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
           Interactive tools for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways
         </p>
-        <p className="text-sm text-gray-500 mt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
           Based on the groundbreaking work of Dr. Alexander Parkhomov
         </p>
       </div>
@@ -26,8 +26,8 @@ export default function Home() {
               <Beaker className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Query Nuclear Reactions</h3>
-              <p className="text-gray-600 text-sm mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Query Nuclear Reactions</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Search through thousands of exothermic fusion, fission, and two-to-two nuclear transmutation reactions
               </p>
               <div className="space-y-2">
@@ -51,8 +51,8 @@ export default function Home() {
               <Zap className="w-6 h-6 text-green-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cascade Simulations</h3>
-              <p className="text-gray-600 text-sm mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Cascade Simulations</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Model chain reactions and predict reaction products from cascading LENR processes
               </p>
               <div className="space-y-2">
@@ -70,8 +70,8 @@ export default function Home() {
               <Database className="w-6 h-6 text-purple-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Element & Nuclide Data</h3>
-              <p className="text-gray-600 text-sm mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Element & Nuclide Data</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Browse comprehensive tables of nuclear and chemical properties
               </p>
               <div className="space-y-2">
@@ -92,8 +92,8 @@ export default function Home() {
               <Database className="w-6 h-6 text-orange-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Queries</h3>
-              <p className="text-gray-600 text-sm mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Advanced Queries</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Execute custom SQL queries across all reaction and property tables
               </p>
               <div className="space-y-2">
@@ -106,9 +106,9 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="card p-6 bg-gradient-to-r from-blue-50 to-purple-50">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">About the Parkhomov Tables</h2>
-        <div className="prose prose-sm max-w-none text-gray-700">
+      <div className="card p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">About the Parkhomov Tables</h2>
+        <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
           <p className="mb-3">
             This package is based on the pioneering work of Russian physicist <strong>Dr. Alexander Parkhomov</strong>,
             who published comprehensive tables of possible cold nuclear transmutation reactions in 2018.
@@ -125,7 +125,7 @@ export default function Home() {
             All reactions in these tables are <strong>exothermic</strong> (energy-producing) and represent
             thermodynamically favorable pathways for nuclear transmutation at low energies.
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Developed by R.W. Greenyer and P.W. Power for the Martin Fleischmann Memorial Project
           </p>
         </div>

@@ -1,20 +1,66 @@
 import { useState, useEffect } from 'react'
 import { Search, Download, Info, Loader2, AlertCircle } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryFusion, getAllElements } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
+// Default values
+const DEFAULT_ELEMENT1 = ['H']
+const DEFAULT_ELEMENT2 = ['H', 'C', 'O']
+const DEFAULT_OUTPUT_ELEMENT: string[] = []
+const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
+const DEFAULT_LIMIT = 100
+
 export default function FusionQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [elements, setElements] = useState<Element[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Parse URL parameters or use defaults
+  const getInitialElement1 = () => {
+    const param = searchParams.get('e1')
+    return param ? param.split(',') : DEFAULT_ELEMENT1
+  }
+
+  const getInitialElement2 = () => {
+    const param = searchParams.get('e2')
+    return param ? param.split(',') : DEFAULT_ELEMENT2
+  }
+
+  const getInitialOutputElement = () => {
+    const param = searchParams.get('e')
+    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT
+  }
+
+  const getInitialMinMeV = () => {
+    const param = searchParams.get('minMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialMaxMeV = () => {
+    const param = searchParams.get('maxMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialNeutrinoTypes = () => {
+    const param = searchParams.get('neutrino')
+    return param ? param.split(',') : DEFAULT_NEUTRINO_TYPES
+  }
+
+  const getInitialLimit = () => {
+    const param = searchParams.get('limit')
+    return param ? parseInt(param) : DEFAULT_LIMIT
+  }
 
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
-    minMeV: undefined,
-    maxMeV: undefined,
-    neutrinoTypes: ['none', 'left', 'right'],
-    limit: 100,
+    minMeV: getInitialMinMeV(),
+    maxMeV: getInitialMaxMeV(),
+    neutrinoTypes: getInitialNeutrinoTypes() as any[],
+    limit: getInitialLimit(),
     orderBy: 'MeV',
     orderDirection: 'desc'
   })
@@ -23,9 +69,9 @@ export default function FusionQuery() {
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [resultElements, setResultElements] = useState<Element[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement1, setSelectedElement1] = useState<string[]>([])
-  const [selectedElement2, setSelectedElement2] = useState<string[]>([])
-  const [selectedOutputElement, setSelectedOutputElement] = useState<string[]>([])
+  const [selectedElement1, setSelectedElement1] = useState<string[]>(getInitialElement1())
+  const [selectedElement2, setSelectedElement2] = useState<string[]>(getInitialElement2())
+  const [selectedOutputElement, setSelectedOutputElement] = useState<string[]>(getInitialOutputElement())
   const [isQuerying, setIsQuerying] = useState(false)
   const [executionTime, setExecutionTime] = useState(0)
 
@@ -34,8 +80,53 @@ export default function FusionQuery() {
     if (db) {
       const allElements = getAllElements(db)
       setElements(allElements)
+      setIsInitialized(true)
     }
   }, [db])
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (!isInitialized) return
+
+    const params = new URLSearchParams()
+
+    // Only add parameters if they differ from defaults
+    if (selectedElement1.length > 0 && JSON.stringify(selectedElement1) !== JSON.stringify(DEFAULT_ELEMENT1)) {
+      params.set('e1', selectedElement1.join(','))
+    } else if (selectedElement1.length > 0) {
+      // Include default to distinguish from "any"
+      params.set('e1', selectedElement1.join(','))
+    }
+
+    if (selectedElement2.length > 0 && JSON.stringify(selectedElement2) !== JSON.stringify(DEFAULT_ELEMENT2)) {
+      params.set('e2', selectedElement2.join(','))
+    } else if (selectedElement2.length > 0) {
+      // Include default to distinguish from "any"
+      params.set('e2', selectedElement2.join(','))
+    }
+
+    if (selectedOutputElement.length > 0) {
+      params.set('e', selectedOutputElement.join(','))
+    }
+
+    if (filter.minMeV !== undefined) {
+      params.set('minMeV', filter.minMeV.toString())
+    }
+
+    if (filter.maxMeV !== undefined) {
+      params.set('maxMeV', filter.maxMeV.toString())
+    }
+
+    if (JSON.stringify(filter.neutrinoTypes) !== JSON.stringify(DEFAULT_NEUTRINO_TYPES)) {
+      params.set('neutrino', filter.neutrinoTypes?.join(',') || '')
+    }
+
+    if (filter.limit !== DEFAULT_LIMIT) {
+      params.set('limit', filter.limit?.toString() || DEFAULT_LIMIT.toString())
+    }
+
+    setSearchParams(params, { replace: true })
+  }, [selectedElement1, selectedElement2, selectedOutputElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
 
   // Auto-execute query when filters change
   useEffect(() => {
@@ -97,7 +188,7 @@ export default function FusionQuery() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading database...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading database...</p>
         </div>
       </div>
     )
@@ -105,12 +196,12 @@ export default function FusionQuery() {
 
   if (dbError) {
     return (
-      <div className="card p-6 bg-red-50">
+      <div className="card p-6 bg-red-50 dark:bg-red-900/20">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
           <div>
-            <h3 className="text-lg font-semibold text-red-900 mb-1">Database Error</h3>
-            <p className="text-red-700">{dbError.message}</p>
+            <h3 className="text-lg font-semibold text-red-900 dark:text-red-200 mb-1">Database Error</h3>
+            <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
           </div>
         </div>
       </div>
@@ -120,13 +211,13 @@ export default function FusionQuery() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Fusion Reactions</h1>
-        <p className="text-gray-600">Query exothermic fusion reactions where two nuclei combine to form a heavier nucleus</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Fusion Reactions</h1>
+        <p className="text-gray-600 dark:text-gray-400">Query exothermic fusion reactions where two nuclei combine to form a heavier nucleus</p>
       </div>
 
       {/* Query Builder */}
       <div className="card p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Query Parameters</h2>
 
         <div className="grid md:grid-cols-3 gap-6">
           {/* Input Element 1 Selection (E1) */}
@@ -155,7 +246,7 @@ export default function FusionQuery() {
 
           {/* MeV Range */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Energy Range (MeV)
             </label>
             <div className="flex gap-2">
@@ -178,7 +269,7 @@ export default function FusionQuery() {
 
           {/* Neutrino Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Neutrino Involvement
             </label>
             <div className="space-y-2">
@@ -205,7 +296,7 @@ export default function FusionQuery() {
 
           {/* Result Limit */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Result Limit
             </label>
             <input
@@ -215,7 +306,7 @@ export default function FusionQuery() {
               onChange={(e) => setFilter({...filter, limit: parseInt(e.target.value) || 100})}
               max={1000}
             />
-            <p className="text-xs text-gray-500 mt-1">Maximum 1000 rows</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum 1000 rows</p>
           </div>
         </div>
 
@@ -227,21 +318,21 @@ export default function FusionQuery() {
                 elements: [],
                 minMeV: undefined,
                 maxMeV: undefined,
-                neutrinoTypes: ['none', 'left', 'right'],
-                limit: 100,
+                neutrinoTypes: DEFAULT_NEUTRINO_TYPES as any[],
+                limit: DEFAULT_LIMIT,
                 orderBy: 'MeV',
                 orderDirection: 'desc'
               })
-              setSelectedElement1([])
-              setSelectedElement2([])
-              setSelectedOutputElement([])
+              setSelectedElement1(DEFAULT_ELEMENT1)
+              setSelectedElement2(DEFAULT_ELEMENT2)
+              setSelectedOutputElement(DEFAULT_OUTPUT_ELEMENT)
             }}
             className="btn btn-secondary px-6 py-2"
           >
             Reset Filters
           </button>
           {isQuerying && (
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Querying...</span>
             </div>
@@ -249,12 +340,12 @@ export default function FusionQuery() {
         </div>
 
         {/* SQL Preview */}
-        <div className="mt-4 p-4 bg-gray-50 rounded-md">
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
           <div className="flex items-center gap-2 mb-2">
-            <Info className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
+            <Info className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SQL Preview:</span>
           </div>
-          <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
+          <code className="text-xs text-gray-600 dark:text-gray-400 block font-mono whitespace-pre-wrap">
             SELECT * FROM FusionAll
             {(selectedElement1.length > 0 || selectedElement2.length > 0 || selectedOutputElement.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
             {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
@@ -277,10 +368,10 @@ export default function FusionQuery() {
           <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Results: {results.length} reactions found
                 </h2>
-                <p className="text-sm text-gray-500">Query executed in {executionTime.toFixed(2)}ms</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Query executed in {executionTime.toFixed(2)}ms</p>
               </div>
               <button
                 onClick={exportToCSV}
@@ -296,13 +387,13 @@ export default function FusionQuery() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={6} className="bg-blue-50">Inputs</th>
-                    <th colSpan={3} className="bg-green-50">Output</th>
+                    <th colSpan={6} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
+                    <th colSpan={3} className="bg-green-50 dark:bg-green-900/30">Output</th>
                     <th rowSpan={2}>Energy<br/>(MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
-                    <th colSpan={2} className="bg-purple-50">Input 1 Type</th>
-                    <th colSpan={2} className="bg-purple-50">Input 2 Type</th>
-                    <th colSpan={2} className="bg-amber-50">Output Type</th>
+                    <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 1 Type</th>
+                    <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 2 Type</th>
+                    <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output Type</th>
                   </tr>
                   <tr>
                     <th>Element</th>
@@ -325,64 +416,64 @@ export default function FusionQuery() {
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold bg-blue-50">{reaction.E1}</td>
-                      <td className="bg-blue-50">{reaction.Z1}</td>
-                      <td className="bg-blue-50">{reaction.A1}</td>
-                      <td className="font-semibold bg-blue-50">{reaction.E2}</td>
-                      <td className="bg-blue-50">{reaction.Z2}</td>
-                      <td className="bg-blue-50">{reaction.A2}</td>
-                      <td className="font-semibold bg-green-50">{reaction.E}</td>
-                      <td className="bg-green-50">{reaction.Z}</td>
-                      <td className="bg-green-50">{reaction.A}</td>
+                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E1}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z1}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A1}</td>
+                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E2}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z2}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A2}</td>
+                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.neutrino === 'none' ? 'bg-gray-100 text-gray-700' :
-                          reaction.neutrino === 'left' ? 'bg-blue-100 text-blue-700' :
-                          'bg-purple-100 text-purple-700'
+                          reaction.neutrino === 'none' ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                          reaction.neutrino === 'left' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                          'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                         }`}>
                           {reaction.neutrino === 'none' ? 'None' :
                            reaction.neutrino === 'left' ? 'Left' : 'Right'}
                         </span>
                       </td>
-                      <td className="bg-purple-50">
+                      <td className="bg-purple-50 dark:bg-purple-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF1 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.nBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
                         </span>
                       </td>
-                      <td className="bg-purple-50">
+                      <td className="bg-purple-50 dark:bg-purple-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF1 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.aBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
                         </span>
                       </td>
-                      <td className="bg-purple-50">
+                      <td className="bg-purple-50 dark:bg-purple-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF2 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.nBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
                         </span>
                       </td>
-                      <td className="bg-purple-50">
+                      <td className="bg-purple-50 dark:bg-purple-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF2 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.aBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
                         </span>
                       </td>
-                      <td className="bg-amber-50">
+                      <td className="bg-amber-50 dark:bg-amber-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.nBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.nBorF === 'b' ? 'Boson' : 'Fermion'}
                         </span>
                       </td>
-                      <td className="bg-amber-50">
+                      <td className="bg-amber-50 dark:bg-amber-900/30">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          reaction.aBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                         }`}>
                           {reaction.aBorF === 'b' ? 'Boson' : 'Fermion'}
                         </span>
@@ -396,14 +487,14 @@ export default function FusionQuery() {
 
           {/* Nuclides Summary */}
           <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Nuclides Appearing in Results ({nuclides.length})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
               {nuclides.map(nuc => (
-                <div key={nuc.id} className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                  <div className="font-semibold text-sm text-gray-900">{nuc.E}-{nuc.A}</div>
-                  <div className="text-xs text-gray-500">Z={nuc.Z}</div>
+                <div key={nuc.id} className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{nuc.E}-{nuc.A}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Z={nuc.Z}</div>
                 </div>
               ))}
             </div>
@@ -411,15 +502,15 @@ export default function FusionQuery() {
 
           {/* Elements Summary */}
           <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Elements Appearing in Results ({resultElements.length})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
               {resultElements.map(el => (
-                <div key={el.Z} className="px-3 py-2 bg-blue-50 rounded border border-blue-200">
-                  <div className="font-bold text-lg text-blue-900">{el.E}</div>
-                  <div className="text-xs text-blue-700">{el.EName}</div>
-                  <div className="text-xs text-blue-600">Z={el.Z}</div>
+                <div key={el.Z} className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
+                  <div className="font-bold text-lg text-blue-900 dark:text-blue-200">{el.E}</div>
+                  <div className="text-xs text-blue-700 dark:text-blue-300">{el.EName}</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Z={el.Z}</div>
                 </div>
               ))}
             </div>

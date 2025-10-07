@@ -95,16 +95,16 @@ export default function TwoToTwoQuery() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading database...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
       </div>
     )
   }
 
   if (dbError) {
     return (
-      <div className="card p-6 border-red-200 bg-red-50">
-        <h2 className="text-xl font-semibold text-red-900 mb-2">Database Error</h2>
-        <p className="text-red-700">{dbError.message}</p>
+      <div className="card p-6 border-red-200 bg-red-50 dark:bg-red-900/20">
+        <h2 className="text-xl font-semibold text-red-900 dark:text-red-200 mb-2">Database Error</h2>
+        <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
       </div>
     )
   }
@@ -112,13 +112,13 @@ export default function TwoToTwoQuery() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Two-To-Two Reactions</h1>
-        <p className="text-gray-600">Query 2-2 transmutation reactions where two input nuclei transform into two different output nuclei</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Two-To-Two Reactions</h1>
+        <p className="text-gray-600 dark:text-gray-400">Query 2-2 transmutation reactions where two input nuclei transform into two different output nuclei</p>
       </div>
 
       {/* Query Builder */}
       <div className="card p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Query Parameters</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Query Parameters</h2>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Input Element 1 Selection (E1) */}
@@ -138,7 +138,7 @@ export default function TwoToTwoQuery() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Energy Range (MeV)
             </label>
             <div className="flex gap-2">
@@ -160,7 +160,7 @@ export default function TwoToTwoQuery() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Neutrino Involvement
             </label>
             <div className="space-y-2">
@@ -186,7 +186,7 @@ export default function TwoToTwoQuery() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Result Limit
             </label>
             <input
@@ -196,7 +196,7 @@ export default function TwoToTwoQuery() {
               onChange={(e) => setFilter({...filter, limit: parseInt(e.target.value) || 100})}
               max={1000}
             />
-            <p className="text-xs text-gray-500 mt-1">Maximum 1000 rows</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum 1000 rows</p>
           </div>
         </div>
 
@@ -220,19 +220,19 @@ export default function TwoToTwoQuery() {
             Reset Filters
           </button>
           {isQuerying && (
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
               <Loader className="w-4 h-4 animate-spin" />
               <span className="text-sm">Querying...</span>
             </div>
           )}
         </div>
 
-        <div className="mt-4 p-4 bg-gray-50 rounded-md">
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
           <div className="flex items-center gap-2 mb-2">
-            <Info className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
+            <Info className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SQL Preview:</span>
           </div>
-          <code className="text-xs text-gray-600 block font-mono whitespace-pre-wrap">
+          <code className="text-xs text-gray-600 dark:text-gray-400 block font-mono whitespace-pre-wrap">
             SELECT * FROM TwoToTwoAll
             {(selectedElement1.length > 0 || selectedElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
             {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
@@ -252,10 +252,10 @@ export default function TwoToTwoQuery() {
           <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Results: {results.length} reactions found
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Query executed in {queryTime.toFixed(2)}ms
                 </p>
               </div>
@@ -273,8 +273,8 @@ export default function TwoToTwoQuery() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={6} className="bg-blue-50">Inputs</th>
-                    <th colSpan={6} className="bg-green-50">Outputs</th>
+                    <th colSpan={6} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
+                    <th colSpan={6} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
                     <th rowSpan={2}>Energy (MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
                   </tr>
@@ -296,18 +296,18 @@ export default function TwoToTwoQuery() {
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold bg-blue-50">{reaction.E1}</td>
-                      <td className="bg-blue-50">{reaction.Z1}</td>
-                      <td className="bg-blue-50">{reaction.A1}</td>
-                      <td className="font-semibold bg-blue-50">{reaction.E2}</td>
-                      <td className="bg-blue-50">{reaction.Z2}</td>
-                      <td className="bg-blue-50">{reaction.A2}</td>
-                      <td className="font-semibold bg-green-50">{reaction.E3}</td>
-                      <td className="bg-green-50">{reaction.Z3}</td>
-                      <td className="bg-green-50">{reaction.A3}</td>
-                      <td className="font-semibold bg-green-50">{reaction.E4}</td>
-                      <td className="bg-green-50">{reaction.Z4}</td>
-                      <td className="bg-green-50">{reaction.A4}</td>
+                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E1}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z1}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A1}</td>
+                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E2}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z2}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A2}</td>
+                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E3}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z3}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A3}</td>
+                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E4}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z4}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A4}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td>{reaction.neutrino}</td>
                     </tr>
@@ -319,28 +319,28 @@ export default function TwoToTwoQuery() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Nuclides in Results ({nuclides.length})
               </h3>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {nuclides.map((nuc, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="font-semibold">{nuc.E}<sup>{nuc.A}</sup></span>
-                    <span className="text-sm text-gray-600">Z={nuc.Z}, A={nuc.A}</span>
+                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{nuc.E}<sup>{nuc.A}</sup></span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Z={nuc.Z}, A={nuc.A}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Elements in Results ({elements.length})
               </h3>
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                 {elements.map((el) => (
-                  <div key={el.Z} className="px-3 py-2 bg-gray-50 rounded text-sm">
-                    <div className="font-semibold">{el.E}</div>
-                    <div className="text-xs text-gray-600">{el.EName}</div>
+                  <div key={el.Z} className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{el.E}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">{el.EName}</div>
                   </div>
                 ))}
               </div>

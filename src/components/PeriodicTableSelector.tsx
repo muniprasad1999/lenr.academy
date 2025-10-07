@@ -236,7 +236,7 @@ export default function PeriodicTableSelector({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         {label}
       </label>
 
@@ -262,14 +262,14 @@ export default function PeriodicTableSelector({
             return (
               <span
                 key={symbol}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 rounded text-xs font-medium"
               >
                 {symbol}
                 {element && ` (${element.EName})`}
                 <button
                   type="button"
                   onClick={() => toggleElement(symbol)}
-                  className="hover:text-primary-900"
+                  className="hover:text-primary-900 dark:hover:text-primary-200"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -279,7 +279,7 @@ export default function PeriodicTableSelector({
           <button
             type="button"
             onClick={clearSelection}
-            className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1"
+            className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-2 py-1"
           >
             Clear all
           </button>
@@ -288,13 +288,13 @@ export default function PeriodicTableSelector({
 
       {/* Periodic Table Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full min-w-[800px]">
+        <div className="absolute z-50 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 w-full min-w-[800px]">
           <div className="mb-3 flex justify-between items-center">
-            <h3 className="font-semibold text-gray-900">Select Elements</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Select Elements</h3>
             {selectedElements.length > 0 && (
               <button
                 onClick={clearSelection}
-                className="text-sm text-primary-600 hover:text-primary-800"
+                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
               >
                 Clear Selection
               </button>
@@ -318,7 +318,7 @@ export default function PeriodicTableSelector({
                     return (
                       <div
                         key={`${period}-${group}`}
-                        className="periodic-cell-placeholder text-xs text-gray-500 flex items-center justify-center"
+                        className="periodic-cell-placeholder text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center"
                       >
                         {period === 6 ? '57-71' : '89-103'}
                       </div>
@@ -333,7 +333,7 @@ export default function PeriodicTableSelector({
 
           {/* Lanthanides */}
           <div className="mb-2">
-            <div className="text-xs text-gray-600 mb-1 font-medium">Lanthanides (57-71)</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">Lanthanides (57-71)</div>
             <div className="periodic-row">
               {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(group =>
                 renderCell(8, group)
@@ -343,7 +343,7 @@ export default function PeriodicTableSelector({
 
           {/* Actinides */}
           <div>
-            <div className="text-xs text-gray-600 mb-1 font-medium">Actinides (89-103)</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium">Actinides (89-103)</div>
             <div className="periodic-row">
               {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(group =>
                 renderCell(9, group)
@@ -383,6 +383,12 @@ export default function PeriodicTableSelector({
           justify-content: center;
         }
 
+        .dark .periodic-cell {
+          border-color: #4b5563;
+          background: #374151;
+          color: #e5e7eb;
+        }
+
         .periodic-cell:hover {
           border-color: #3b82f6;
           background: #eff6ff;
@@ -391,15 +397,30 @@ export default function PeriodicTableSelector({
           box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
 
+        .dark .periodic-cell:hover {
+          background: #1e3a8a;
+          border-color: #60a5fa;
+        }
+
         .periodic-cell-selected {
           background: #3b82f6;
           border-color: #2563eb;
           color: white;
         }
 
+        .dark .periodic-cell-selected {
+          background: #2563eb;
+          border-color: #1d4ed8;
+        }
+
         .periodic-cell-selected:hover {
           background: #2563eb;
           border-color: #1d4ed8;
+        }
+
+        .dark .periodic-cell-selected:hover {
+          background: #1e40af;
+          border-color: #1e3a8a;
         }
 
         .periodic-cell-number {
@@ -427,10 +448,19 @@ export default function PeriodicTableSelector({
           background: #f9fafb;
         }
 
+        .dark .periodic-cell-placeholder {
+          border-color: #4b5563;
+          background: #1f2937;
+        }
+
         .periodic-cell-disabled {
           opacity: 0.3;
           cursor: not-allowed;
           background: #f3f4f6;
+        }
+
+        .dark .periodic-cell-disabled {
+          background: #1f2937;
         }
 
         .periodic-cell-disabled:hover {
@@ -438,6 +468,11 @@ export default function PeriodicTableSelector({
           box-shadow: none;
           border-color: #d1d5db;
           background: #f3f4f6;
+        }
+
+        .dark .periodic-cell-disabled:hover {
+          border-color: #4b5563;
+          background: #1f2937;
         }
       `}</style>
     </div>

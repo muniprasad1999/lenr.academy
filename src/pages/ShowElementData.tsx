@@ -27,16 +27,16 @@ export default function ShowElementData() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading database...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
       </div>
     )
   }
 
   if (dbError) {
     return (
-      <div className="card p-6 border-red-200 bg-red-50">
-        <h2 className="text-xl font-semibold text-red-900 mb-2">Database Error</h2>
-        <p className="text-red-700">{dbError.message}</p>
+      <div className="card p-6 border-red-200 bg-red-50 dark:bg-red-900/20">
+        <h2 className="text-xl font-semibold text-red-900 dark:text-red-200 mb-2">Database Error</h2>
+        <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
       </div>
     )
   }
@@ -44,12 +44,12 @@ export default function ShowElementData() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Show Element Data</h1>
-        <p className="text-gray-600">View detailed chemical and physical properties for any element</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Show Element Data</h1>
+        <p className="text-gray-600 dark:text-gray-400">View detailed chemical and physical properties for any element</p>
       </div>
 
       <div className="card p-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Select Element
         </label>
         <select
@@ -69,77 +69,77 @@ export default function ShowElementData() {
       {element && (
         <div className="space-y-6 mt-6">
           <div className="card p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">{element.EName} ({element.E})</h2>
-            <p className="text-sm text-gray-500 mb-4">Atomic Number: {element.Z}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{element.EName} ({element.E})</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Atomic Number: {element.Z}</p>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">Periodic Table</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Periodic Table</h3>
                 <dl className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Atomic Number (Z):</dt>
-                    <dd className="font-medium">{element.Z}</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Atomic Number (Z):</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Z}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Period:</dt>
-                    <dd className="font-medium">{element.Period}</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Period:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Period}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Group:</dt>
-                    <dd className="font-medium">{element.Group}</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Group:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Group}</dd>
                   </div>
                   {element.AWeight && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Atomic Weight:</dt>
-                      <dd className="font-medium">{element.AWeight.toFixed(3)}</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Atomic Weight:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.AWeight.toFixed(3)}</dd>
                     </div>
                   )}
                 </dl>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">Atomic Properties</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Atomic Properties</h3>
                 <dl className="space-y-2 text-sm">
                   {element.ARadius && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Atomic Radius:</dt>
-                      <dd className="font-medium">{element.ARadius} pm</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Atomic Radius:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ARadius} pm</dd>
                     </div>
                   )}
                   {element.Valence !== null && element.Valence !== undefined && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Valence:</dt>
-                      <dd className="font-medium">{element.Valence}</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Valence:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Valence}</dd>
                     </div>
                   )}
                   {element.Negativity && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Electronegativity:</dt>
-                      <dd className="font-medium">{element.Negativity}</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Electronegativity:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Negativity}</dd>
                     </div>
                   )}
                   {element.Affinity && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Electron Affinity:</dt>
-                      <dd className="font-medium">{element.Affinity} kJ/mol</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Electron Affinity:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Affinity} kJ/mol</dd>
                     </div>
                   )}
                 </dl>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">Ionization</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Ionization</h3>
                 <dl className="space-y-2 text-sm">
                   {element.MaxIonNum !== null && element.MaxIonNum !== undefined && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Max Ion Number:</dt>
-                      <dd className="font-medium">{element.MaxIonNum}</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Max Ion Number:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonNum}</dd>
                     </div>
                   )}
                   {element.MaxIonization && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-600">Max Ionization:</dt>
-                      <dd className="font-medium">{element.MaxIonization.toFixed(1)} kJ/mol</dd>
+                      <dt className="text-gray-600 dark:text-gray-400">Max Ionization:</dt>
+                      <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonization.toFixed(1)} kJ/mol</dd>
                     </div>
                   )}
                 </dl>
@@ -149,60 +149,60 @@ export default function ShowElementData() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="card p-6">
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">Thermal Properties</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Thermal Properties</h3>
               <dl className="space-y-2 text-sm">
                 {element.Melting && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Melting Point:</dt>
-                    <dd className="font-medium">{element.Melting.toFixed(2)} K</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Melting Point:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Melting.toFixed(2)} K</dd>
                   </div>
                 )}
                 {element.Boiling && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Boiling Point:</dt>
-                    <dd className="font-medium">{element.Boiling.toFixed(2)} K</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Boiling Point:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Boiling.toFixed(2)} K</dd>
                   </div>
                 )}
                 {element.SpecHeat && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Specific Heat:</dt>
-                    <dd className="font-medium">{element.SpecHeat.toFixed(2)} J/(g·K)</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Specific Heat:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.SpecHeat.toFixed(2)} J/(g·K)</dd>
                   </div>
                 )}
                 {element.ThermConduct && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Thermal Conductivity:</dt>
-                    <dd className="font-medium">{element.ThermConduct.toFixed(2)} W/(m·K)</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Thermal Conductivity:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ThermConduct.toFixed(2)} W/(m·K)</dd>
                   </div>
                 )}
               </dl>
             </div>
 
             <div className="card p-6">
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">Physical Properties</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Physical Properties</h3>
               <dl className="space-y-2 text-sm">
                 {element.STPDensity && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Density (STP):</dt>
-                    <dd className="font-medium">{element.STPDensity.toFixed(3)} g/cm³</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Density (STP):</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.STPDensity.toFixed(3)} g/cm³</dd>
                   </div>
                 )}
                 {element.MolarVolume && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Molar Volume:</dt>
-                    <dd className="font-medium">{element.MolarVolume.toFixed(2)} cm³/mol</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Molar Volume:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MolarVolume.toFixed(2)} cm³/mol</dd>
                   </div>
                 )}
                 {element.ElectConduct && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Electrical Conductivity:</dt>
-                    <dd className="font-medium">{element.ElectConduct.toFixed(2)} MS/m</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Electrical Conductivity:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ElectConduct.toFixed(2)} MS/m</dd>
                   </div>
                 )}
                 {element.MagType && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-600">Magnetic Type:</dt>
-                    <dd className="font-medium">{element.MagType}</dd>
+                    <dt className="text-gray-600 dark:text-gray-400">Magnetic Type:</dt>
+                    <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MagType}</dd>
                   </div>
                 )}
               </dl>

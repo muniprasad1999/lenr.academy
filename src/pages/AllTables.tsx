@@ -65,16 +65,16 @@ export default function AllTables() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading database...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
       </div>
     )
   }
 
   if (dbError) {
     return (
-      <div className="card p-6 border-red-200 bg-red-50">
-        <h2 className="text-xl font-semibold text-red-900 mb-2">Database Error</h2>
-        <p className="text-red-700">{dbError.message}</p>
+      <div className="card p-6 border-red-200 bg-red-50 dark:bg-red-900/20">
+        <h2 className="text-xl font-semibold text-red-900 dark:text-red-200 mb-2">Database Error</h2>
+        <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
       </div>
     )
   }
@@ -82,15 +82,15 @@ export default function AllTables() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Tables Query Tool</h1>
-        <p className="text-gray-600">Execute custom SQL queries across all reaction and property tables</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">All Tables Query Tool</h1>
+        <p className="text-gray-600 dark:text-gray-400">Execute custom SQL queries across all reaction and property tables</p>
       </div>
 
       <div className="card p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">SQL Query Editor</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">SQL Query Editor</h2>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Enter SQL Query
           </label>
           <textarea
@@ -134,12 +134,12 @@ export default function AllTables() {
       </div>
 
       {error && (
-        <div className="card p-6 mb-6 border-red-200 bg-red-50">
+        <div className="card p-6 mb-6 border-red-200 bg-red-50 dark:bg-red-900/20">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-red-900 mb-1">Query Error</h3>
-              <p className="text-sm text-red-700 font-mono">{error}</p>
+              <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Query Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-300 font-mono">{error}</p>
             </div>
           </div>
         </div>
@@ -149,10 +149,10 @@ export default function AllTables() {
         <div className="card p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Query Results: {results[0].values.length} rows
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Executed in {queryTime.toFixed(2)}ms
               </p>
             </div>
@@ -180,7 +180,7 @@ export default function AllTables() {
                     {row.map((cell, cellIdx) => (
                       <td key={cellIdx}>
                         {cell === null ? (
-                          <span className="text-gray-400 italic">null</span>
+                          <span className="text-gray-400 dark:text-gray-500 italic">null</span>
                         ) : typeof cell === 'number' ? (
                           cell.toFixed(cell % 1 === 0 ? 0 : 2)
                         ) : (
@@ -197,22 +197,22 @@ export default function AllTables() {
       )}
 
       {results && results.length === 0 && !error && (
-        <div className="card p-6 mb-6 bg-gray-50">
-          <p className="text-gray-600">Query executed successfully but returned no results.</p>
+        <div className="card p-6 mb-6 bg-gray-50 dark:bg-gray-800">
+          <p className="text-gray-600 dark:text-gray-400">Query executed successfully but returned no results.</p>
         </div>
       )}
 
       <div className="card p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <BookOpen className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Example Queries</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Example Queries</h3>
         </div>
         <div className="space-y-2">
           {exampleQueries.map((query, idx) => (
             <button
               key={idx}
               onClick={() => setSqlQuery(query)}
-              className="block w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded text-sm font-mono text-gray-700 transition-colors"
+              className="block w-full text-left p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm font-mono text-gray-700 dark:text-gray-300 transition-colors"
             >
               {query}
             </button>
@@ -221,40 +221,40 @@ export default function AllTables() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="card p-6 bg-blue-50">
-          <h3 className="font-semibold text-gray-900 mb-3">Available Tables</h3>
-          <ul className="text-sm text-gray-700 space-y-2">
+        <div className="card p-6 bg-blue-50 dark:bg-blue-900/30">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Available Tables</h3>
+          <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
             <li>
-              <code className="bg-white px-2 py-1 rounded font-semibold">FusionAll</code>
-              <span className="text-gray-600 ml-2">- Fusion reactions (E1 + E → E)</span>
+              <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded font-semibold">FusionAll</code>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">- Fusion reactions (E1 + E → E)</span>
             </li>
             <li>
-              <code className="bg-white px-2 py-1 rounded font-semibold">FissionAll</code>
-              <span className="text-gray-600 ml-2">- Fission reactions (E → E1 + E2)</span>
+              <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded font-semibold">FissionAll</code>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">- Fission reactions (E → E1 + E2)</span>
             </li>
             <li>
-              <code className="bg-white px-2 py-1 rounded font-semibold">TwoToTwoAll</code>
-              <span className="text-gray-600 ml-2">- 2-to-2 reactions (E1 + E2 → E3 + E4)</span>
+              <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded font-semibold">TwoToTwoAll</code>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">- 2-to-2 reactions (E1 + E2 → E3 + E4)</span>
             </li>
             <li>
-              <code className="bg-white px-2 py-1 rounded font-semibold">NuclidesPlus</code>
-              <span className="text-gray-600 ml-2">- Nuclear isotope properties</span>
+              <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded font-semibold">NuclidesPlus</code>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">- Nuclear isotope properties</span>
             </li>
             <li>
-              <code className="bg-white px-2 py-1 rounded font-semibold">ElementsPlus</code>
-              <span className="text-gray-600 ml-2">- Chemical element properties</span>
+              <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded font-semibold">ElementsPlus</code>
+              <span className="text-gray-600 dark:text-gray-400 ml-2">- Chemical element properties</span>
             </li>
           </ul>
         </div>
 
-        <div className="card p-6 bg-yellow-50">
-          <h3 className="font-semibold text-gray-900 mb-3">SQL Tips</h3>
-          <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside">
-            <li>Use <code className="bg-white px-1 rounded">IN</code> for multiple values: <code className="bg-white px-1 rounded">E IN ('H','D','Li')</code></li>
-            <li>Always include <code className="bg-white px-1 rounded">LIMIT</code> for large queries (max 1000)</li>
-            <li>Common fields: <code className="bg-white px-1 rounded">E, Z, A, MeV, neutrino</code></li>
-            <li>Use <code className="bg-white px-1 rounded">GROUP BY</code> for aggregations</li>
-            <li>String comparisons use double quotes: <code className="bg-white px-1 rounded">"H"</code></li>
+        <div className="card p-6 bg-yellow-50 dark:bg-yellow-900/30">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3">SQL Tips</h3>
+          <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2 list-disc list-inside">
+            <li>Use <code className="bg-white dark:bg-gray-700 px-1 rounded">IN</code> for multiple values: <code className="bg-white dark:bg-gray-700 px-1 rounded">E IN ('H','D','Li')</code></li>
+            <li>Always include <code className="bg-white dark:bg-gray-700 px-1 rounded">LIMIT</code> for large queries (max 1000)</li>
+            <li>Common fields: <code className="bg-white dark:bg-gray-700 px-1 rounded">E, Z, A, MeV, neutrino</code></li>
+            <li>Use <code className="bg-white dark:bg-gray-700 px-1 rounded">GROUP BY</code> for aggregations</li>
+            <li>String comparisons use double quotes: <code className="bg-white dark:bg-gray-700 px-1 rounded">"H"</code></li>
           </ul>
         </div>
       </div>
