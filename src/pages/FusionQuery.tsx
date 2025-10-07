@@ -298,24 +298,28 @@ export default function FusionQuery() {
                   <tr>
                     <th colSpan={6} className="bg-blue-50">Inputs</th>
                     <th colSpan={3} className="bg-green-50">Output</th>
-                    <th rowSpan={2}>Energy (MeV)</th>
+                    <th rowSpan={2}>Energy<br/>(MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
-                    <th colSpan={4} className="bg-gray-50">Boson/Fermion</th>
+                    <th colSpan={2} className="bg-purple-50">Input 1 Type</th>
+                    <th colSpan={2} className="bg-purple-50">Input 2 Type</th>
+                    <th colSpan={2} className="bg-amber-50">Output Type</th>
                   </tr>
                   <tr>
-                    <th>E1</th>
-                    <th>Z1</th>
-                    <th>A1</th>
-                    <th>E2</th>
-                    <th>Z2</th>
-                    <th>A2</th>
-                    <th>E</th>
+                    <th>Element</th>
                     <th>Z</th>
                     <th>A</th>
-                    <th>nBorF1</th>
-                    <th>aBorF1</th>
-                    <th>nBorF</th>
-                    <th>aBorF</th>
+                    <th>Element</th>
+                    <th>Z</th>
+                    <th>A</th>
+                    <th>Element</th>
+                    <th>Z</th>
+                    <th>A</th>
+                    <th>Nuclear</th>
+                    <th>Atomic</th>
+                    <th>Nuclear</th>
+                    <th>Atomic</th>
+                    <th>Nuclear</th>
+                    <th>Atomic</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,11 +335,58 @@ export default function FusionQuery() {
                       <td className="bg-green-50">{reaction.Z}</td>
                       <td className="bg-green-50">{reaction.A}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
-                      <td><span className="px-2 py-1 bg-gray-100 rounded text-xs">{reaction.neutrino}</span></td>
-                      <td className="bg-gray-50">{reaction.nBorF1}</td>
-                      <td className="bg-gray-50">{reaction.aBorF1}</td>
-                      <td className="bg-gray-50">{reaction.nBorF}</td>
-                      <td className="bg-gray-50">{reaction.aBorF}</td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.neutrino === 'none' ? 'bg-gray-100 text-gray-700' :
+                          reaction.neutrino === 'left' ? 'bg-blue-100 text-blue-700' :
+                          'bg-purple-100 text-purple-700'
+                        }`}>
+                          {reaction.neutrino === 'none' ? 'None' :
+                           reaction.neutrino === 'left' ? 'Left' : 'Right'}
+                        </span>
+                      </td>
+                      <td className="bg-purple-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.nBorF1 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
+                      <td className="bg-purple-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.aBorF1 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
+                      <td className="bg-purple-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.nBorF2 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
+                      <td className="bg-purple-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.aBorF2 === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
+                      <td className="bg-amber-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.nBorF === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.nBorF === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
+                      <td className="bg-amber-50">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.aBorF === 'b' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {reaction.aBorF === 'b' ? 'Boson' : 'Fermion'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -10,6 +10,21 @@ import type {
 } from '../types';
 
 /**
+ * Expand element list to include isotope variants
+ * For example, when H is selected, also include D (deuterium)
+ */
+function expandElementList(elements: string[]): string[] {
+  const expanded = [...elements];
+
+  // If H is selected, also include D
+  if (elements.includes('H') && !elements.includes('D')) {
+    expanded.push('D');
+  }
+
+  return expanded;
+}
+
+/**
  * Build SQL WHERE clause from filter
  */
 function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' | 'twotwo'): string {
@@ -31,12 +46,14 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
 
   // Element-specific lists (E1 and E/E2)
   if (filter.element1List && filter.element1List.length > 0) {
-    const elements = filter.element1List.map(e => `'${e}'`).join(',');
+    const expandedElements = expandElementList(filter.element1List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
     conditions.push(`E1 IN (${elements})`);
   }
 
   if (filter.element2List && filter.element2List.length > 0) {
-    const elements = filter.element2List.map(e => `'${e}'`).join(',');
+    const expandedElements = expandElementList(filter.element2List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
     if (tableType === 'fusion') {
       conditions.push(`E2 IN (${elements})`);
     } else if (tableType === 'fission') {
@@ -48,7 +65,8 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
 
   // Output element filter (for fusion output element E)
   if (filter.outputElementList && filter.outputElementList.length > 0) {
-    const elements = filter.outputElementList.map(e => `'${e}'`).join(',');
+    const expandedElements = expandElementList(filter.outputElementList);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
     if (tableType === 'fusion') {
       conditions.push(`E IN (${elements})`);
     }
