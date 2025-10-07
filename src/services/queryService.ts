@@ -459,9 +459,21 @@ export function executeCustomQuery(db: Database, sql: string): any {
  * Get all elements from database
  */
 export function getAllElements(db: Database): Element[] {
-  const sql = 'SELECT * FROM ElementsPlus ORDER BY Z';
+  const sql = 'SELECT * FROM ElementPropertiesPlus ORDER BY Z';
   const results = db.exec(sql);
   const elements: Element[] = [];
+
+  // Column name mapping from database to TypeScript interface
+  const columnMap: { [key: string]: string } = {
+    'P': 'Period',
+    'G': 'Group',
+    'MolarVol': 'MolarVolume',
+    'Val': 'Valence',
+    'MxInum': 'MaxIonNum',
+    'MxInize': 'MaxIonization',
+    'ElectG': 'ElectConduct',
+    'ThermG': 'ThermConduct'
+  };
 
   if (results.length > 0) {
     const columns = results[0].columns;
@@ -470,7 +482,9 @@ export function getAllElements(db: Database): Element[] {
     values.forEach((row: any[]) => {
       const element: any = {};
       columns.forEach((col, idx) => {
-        element[col] = row[idx];
+        // Map database column names to TypeScript interface property names
+        const propertyName = columnMap[col] || col;
+        element[propertyName] = row[idx];
       });
       elements.push(element as Element);
     });
@@ -483,15 +497,29 @@ export function getAllElements(db: Database): Element[] {
  * Get a specific element by its symbol
  */
 export function getElementBySymbol(db: Database, symbol: string): Element | null {
-  const sql = 'SELECT * FROM ElementsPlus WHERE E = ?';
+  const sql = 'SELECT * FROM ElementPropertiesPlus WHERE E = ?';
   const results = db.exec(sql, [symbol]);
+
+  // Column name mapping from database to TypeScript interface
+  const columnMap: { [key: string]: string } = {
+    'P': 'Period',
+    'G': 'Group',
+    'MolarVol': 'MolarVolume',
+    'Val': 'Valence',
+    'MxInum': 'MaxIonNum',
+    'MxInize': 'MaxIonization',
+    'ElectG': 'ElectConduct',
+    'ThermG': 'ThermConduct'
+  };
 
   if (results.length > 0 && results[0].values.length > 0) {
     const columns = results[0].columns;
     const row = results[0].values[0];
     const element: any = {};
     columns.forEach((col, idx) => {
-      element[col] = row[idx];
+      // Map database column names to TypeScript interface property names
+      const propertyName = columnMap[col] || col;
+      element[propertyName] = row[idx];
     });
     return element as Element;
   }

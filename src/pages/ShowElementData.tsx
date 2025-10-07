@@ -9,13 +9,28 @@ export default function ShowElementData() {
 
   // Get all elements from database
   const allElements: Element[] = db ? (() => {
-    const result = db.exec('SELECT * FROM ElementsPlus ORDER BY Z')
+    const result = db.exec('SELECT * FROM ElementPropertiesPlus ORDER BY Z')
     if (result.length === 0) return []
+
+    // Column name mapping from database to TypeScript interface
+    const columnMap: { [key: string]: string } = {
+      'P': 'Period',
+      'G': 'Group',
+      'MolarVol': 'MolarVolume',
+      'Val': 'Valence',
+      'MxInum': 'MaxIonNum',
+      'MxInize': 'MaxIonization',
+      'ElectG': 'ElectConduct',
+      'ThermG': 'ThermConduct'
+    }
+
     const columns = result[0].columns
     return result[0].values.map(row => {
       const element: any = {}
       columns.forEach((col, idx) => {
-        element[col] = row[idx]
+        // Map database column names to TypeScript interface property names
+        const propertyName = columnMap[col] || col
+        element[propertyName] = row[idx]
       })
       return element as Element
     })
@@ -88,7 +103,7 @@ export default function ShowElementData() {
                     <dt className="text-gray-600 dark:text-gray-400">Group:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Group}</dd>
                   </div>
-                  {element.AWeight && (
+                  {element.AWeight !== null && element.AWeight !== undefined && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Atomic Weight:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.AWeight.toFixed(3)}</dd>
@@ -100,7 +115,7 @@ export default function ShowElementData() {
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Atomic Properties</h3>
                 <dl className="space-y-2 text-sm">
-                  {element.ARadius && (
+                  {element.ARadius !== null && element.ARadius !== undefined && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Atomic Radius:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ARadius} pm</dd>
@@ -112,13 +127,13 @@ export default function ShowElementData() {
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Valence}</dd>
                     </div>
                   )}
-                  {element.Negativity && (
+                  {element.Negativity !== null && element.Negativity !== undefined && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Electronegativity:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Negativity}</dd>
                     </div>
                   )}
-                  {element.Affinity && (
+                  {element.Affinity !== null && element.Affinity !== undefined && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Electron Affinity:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Affinity} kJ/mol</dd>
@@ -136,7 +151,7 @@ export default function ShowElementData() {
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonNum}</dd>
                     </div>
                   )}
-                  {element.MaxIonization && (
+                  {element.MaxIonization !== null && element.MaxIonization !== undefined && (
                     <div className="flex justify-between">
                       <dt className="text-gray-600 dark:text-gray-400">Max Ionization:</dt>
                       <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonization.toFixed(1)} kJ/mol</dd>
@@ -151,25 +166,25 @@ export default function ShowElementData() {
             <div className="card p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Thermal Properties</h3>
               <dl className="space-y-2 text-sm">
-                {element.Melting && (
+                {element.Melting !== null && element.Melting !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Melting Point:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Melting.toFixed(2)} K</dd>
                   </div>
                 )}
-                {element.Boiling && (
+                {element.Boiling !== null && element.Boiling !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Boiling Point:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Boiling.toFixed(2)} K</dd>
                   </div>
                 )}
-                {element.SpecHeat && (
+                {element.SpecHeat !== null && element.SpecHeat !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Specific Heat:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.SpecHeat.toFixed(2)} J/(g·K)</dd>
                   </div>
                 )}
-                {element.ThermConduct && (
+                {element.ThermConduct !== null && element.ThermConduct !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Thermal Conductivity:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ThermConduct.toFixed(2)} W/(m·K)</dd>
@@ -181,19 +196,19 @@ export default function ShowElementData() {
             <div className="card p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">Physical Properties</h3>
               <dl className="space-y-2 text-sm">
-                {element.STPDensity && (
+                {element.STPDensity !== null && element.STPDensity !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Density (STP):</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.STPDensity.toFixed(3)} g/cm³</dd>
                   </div>
                 )}
-                {element.MolarVolume && (
+                {element.MolarVolume !== null && element.MolarVolume !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Molar Volume:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MolarVolume.toFixed(2)} cm³/mol</dd>
                   </div>
                 )}
-                {element.ElectConduct && (
+                {element.ElectConduct !== null && element.ElectConduct !== undefined && (
                   <div className="flex justify-between">
                     <dt className="text-gray-600 dark:text-gray-400">Electrical Conductivity:</dt>
                     <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ElectConduct.toFixed(2)} MS/m</dd>

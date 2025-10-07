@@ -49,7 +49,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
               <dt className="text-gray-600 dark:text-gray-400">Group:</dt>
               <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Group}</dd>
             </div>
-            {element.AWeight && (
+            {typeof element.AWeight === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Atomic Weight:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -65,25 +65,25 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
             Atomic Properties
           </h3>
           <dl className="space-y-2 text-sm">
-            {element.ARadius && (
+            {typeof element.ARadius === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Atomic Radius:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">{element.ARadius} pm</dd>
               </div>
             )}
-            {element.Valence !== null && element.Valence !== undefined && (
+            {typeof element.Valence === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Valence:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Valence}</dd>
               </div>
             )}
-            {element.Negativity && (
+            {typeof element.Negativity === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Electronegativity:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">{element.Negativity}</dd>
               </div>
             )}
-            {element.Affinity && (
+            {typeof element.Affinity === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Electron Affinity:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -99,13 +99,13 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
             Ionization
           </h3>
           <dl className="space-y-2 text-sm">
-            {element.MaxIonNum !== null && element.MaxIonNum !== undefined && (
+            {typeof element.MaxIonNum === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Max Ion Number:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">{element.MaxIonNum}</dd>
               </div>
             )}
-            {element.MaxIonization && (
+            {typeof element.MaxIonization === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Max Ionization:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -123,7 +123,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
             Thermal Properties
           </h3>
           <dl className="space-y-2 text-sm">
-            {element.Melting && (
+            {typeof element.Melting === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Melting Point:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -131,7 +131,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
                 </dd>
               </div>
             )}
-            {element.Boiling && (
+            {typeof element.Boiling === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Boiling Point:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -139,7 +139,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
                 </dd>
               </div>
             )}
-            {element.SpecHeat && (
+            {typeof element.SpecHeat === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Specific Heat:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -147,7 +147,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
                 </dd>
               </div>
             )}
-            {element.ThermConduct && (
+            {typeof element.ThermConduct === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Thermal Conductivity:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -163,7 +163,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
             Physical Properties
           </h3>
           <dl className="space-y-2 text-sm">
-            {element.STPDensity && (
+            {typeof element.STPDensity === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Density (STP):</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -171,7 +171,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
                 </dd>
               </div>
             )}
-            {element.MolarVolume && (
+            {typeof element.MolarVolume === 'number' && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Molar Volume:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
@@ -179,7 +179,7 @@ export default function ElementDetailsCard({ element, onClose }: ElementDetailsC
                 </dd>
               </div>
             )}
-            {element.ElectConduct && (
+            {typeof element.ElectConduct === 'number' && !isNaN(element.ElectConduct) && (
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Electrical Conductivity:</dt>
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
