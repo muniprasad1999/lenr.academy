@@ -90,6 +90,24 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
     }
   }
 
+  // TwoToTwo output element 3 filter
+  if (filter.outputElement3List && filter.outputElement3List.length > 0) {
+    const expandedElements = expandElementList(filter.outputElement3List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
+    if (tableType === 'twotwo') {
+      conditions.push(`E3 IN (${elements})`);
+    }
+  }
+
+  // TwoToTwo output element 4 filter
+  if (filter.outputElement4List && filter.outputElement4List.length > 0) {
+    const expandedElements = expandElementList(filter.outputElement4List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
+    if (tableType === 'twotwo') {
+      conditions.push(`E4 IN (${elements})`);
+    }
+  }
+
   // Legacy elements filter (for backwards compatibility)
   if (filter.elements && filter.elements.length > 0) {
     const elements = filter.elements.map(e => `'${e}'`).join(',');

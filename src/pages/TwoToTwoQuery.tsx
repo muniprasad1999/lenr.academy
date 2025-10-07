@@ -1,48 +1,137 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Info, Loader } from 'lucide-react'
+import { Search, Download, Info, Loader2, Eye, EyeOff } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import type { TwoToTwoReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryTwoToTwo, getAllElements } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
+// Default values
+const DEFAULT_ELEMENT1: string[] = []
+const DEFAULT_ELEMENT2: string[] = []
+const DEFAULT_OUTPUT_ELEMENT3: string[] = []
+const DEFAULT_OUTPUT_ELEMENT4: string[] = []
+const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
+const DEFAULT_LIMIT = 100
+
 export default function TwoToTwoQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
-  const [availableElements, setAvailableElements] = useState<Element[]>([])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [elements, setElements] = useState<Element[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Parse URL parameters or use defaults
+  const getInitialElement1 = () => {
+    const param = searchParams.get('e1')
+    return param ? param.split(',') : DEFAULT_ELEMENT1
+  }
+
+  const getInitialElement2 = () => {
+    const param = searchParams.get('e2')
+    return param ? param.split(',') : DEFAULT_ELEMENT2
+  }
+
+  const getInitialOutputElement3 = () => {
+    const param = searchParams.get('e3')
+    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT3
+  }
+
+  const getInitialOutputElement4 = () => {
+    const param = searchParams.get('e4')
+    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT4
+  }
+
+  const getInitialMinMeV = () => {
+    const param = searchParams.get('minMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialMaxMeV = () => {
+    const param = searchParams.get('maxMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialNeutrinoTypes = () => {
+    const param = searchParams.get('neutrino')
+    return param ? param.split(',') : DEFAULT_NEUTRINO_TYPES
+  }
+
+  const getInitialLimit = () => {
+    const param = searchParams.get('limit')
+    return param ? parseInt(param) : DEFAULT_LIMIT
+  }
 
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
-    minMeV: undefined,
-    maxMeV: undefined,
-    neutrinoTypes: ['none', 'left', 'right'],
-    limit: 100,
+    minMeV: getInitialMinMeV(),
+    maxMeV: getInitialMaxMeV(),
+    neutrinoTypes: getInitialNeutrinoTypes() as any[],
+    limit: getInitialLimit(),
     orderBy: 'MeV',
     orderDirection: 'desc'
   })
 
   const [results, setResults] = useState<TwoToTwoReaction[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement1, setSelectedElement1] = useState<string[]>([])
-  const [selectedElement2, setSelectedElement2] = useState<string[]>([])
-  const [elements, setElements] = useState<Element[]>([])
+  const [selectedElement1, setSelectedElement1] = useState<string[]>(getInitialElement1())
+  const [selectedElement2, setSelectedElement2] = useState<string[]>(getInitialElement2())
+  const [selectedOutputElement3, setSelectedOutputElement3] = useState<string[]>(getInitialOutputElement3())
+  const [selectedOutputElement4, setSelectedOutputElement4] = useState<string[]>(getInitialOutputElement4())
+  const [resultElements, setResultElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
-  const [queryTime, setQueryTime] = useState<number>(0)
+  const [executionTime, setExecutionTime] = useState<number>(0)
   const [totalCount, setTotalCount] = useState(0)
   const [isQuerying, setIsQuerying] = useState(false)
+
+  // Boson/Fermion toggle - default to off for TwoToTwo (too many columns)
+  const [showBosonFermion, setShowBosonFermion] = useState(() => {
+    const saved = localStorage.getItem('showBosonFermion_twotwo')
+    if (saved !== null) return JSON.parse(saved)
+    // Default to hide (off) for TwoToTwo - 8 B/F columns is too much
+    return false
+  })
 
   // Load elements when database is ready
   useEffect(() => {
     if (db) {
       const allElements = getAllElements(db)
-      setAvailableElements(allElements)
+      setElements(allElements)
+      setIsInitialized(true)
     }
   }, [db])
 
+  // Save B/F toggle to localStorage (separate key for TwoToTwo)
+  useEffect(() => {
+    localStorage.setItem('showBosonFermion_twotwo', JSON.stringify(showBosonFermion))
+  }, [showBosonFermion])
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (!isInitialized) return
+
+    const params = new URLSearchParams()
+    if (selectedElement1.length > 0) params.set('e1', selectedElement1.join(','))
+    if (selectedElement2.length > 0) params.set('e2', selectedElement2.join(','))
+    if (selectedOutputElement3.length > 0) params.set('e3', selectedOutputElement3.join(','))
+    if (selectedOutputElement4.length > 0) params.set('e4', selectedOutputElement4.join(','))
+    if (filter.minMeV !== undefined) params.set('minMeV', filter.minMeV.toString())
+    if (filter.maxMeV !== undefined) params.set('maxMeV', filter.maxMeV.toString())
+    if (filter.neutrinoTypes && filter.neutrinoTypes.length > 0 && filter.neutrinoTypes.length < 3) {
+      params.set('neutrino', filter.neutrinoTypes.join(','))
+    }
+    if (filter.limit && filter.limit !== DEFAULT_LIMIT) {
+      params.set('limit', filter.limit.toString())
+    }
+
+    setSearchParams(params, { replace: true })
+  }, [selectedElement1, selectedElement2, selectedOutputElement3, selectedOutputElement4, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
+
   // Auto-execute query when filters change
   useEffect(() => {
-    if (db) {
+    if (db && isInitialized) {
       handleQuery()
     }
-  }, [db, selectedElement1, selectedElement2, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit])
+  }, [db, selectedElement1, selectedElement2, selectedOutputElement3, selectedOutputElement4, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
 
   const handleQuery = () => {
     if (!db) return
@@ -55,15 +144,17 @@ export default function TwoToTwoQuery() {
         ...filter,
         elements: allSelectedElements.length > 0 ? allSelectedElements : undefined,
         element1List: selectedElement1.length > 0 ? selectedElement1 : undefined,
-        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined
+        element2List: selectedElement2.length > 0 ? selectedElement2 : undefined,
+        outputElement3List: selectedOutputElement3.length > 0 ? selectedOutputElement3 : undefined,
+        outputElement4List: selectedOutputElement4.length > 0 ? selectedOutputElement4 : undefined
       }
 
       const result = queryTwoToTwo(db, queryFilter)
 
       setResults(result.reactions)
-      setElements(result.elements)
+      setResultElements(result.elements)
       setNuclides(result.nuclides)
-      setQueryTime(result.executionTime)
+      setExecutionTime(result.executionTime)
       setTotalCount(result.totalCount)
       setShowResults(true)
     } catch (error) {
@@ -96,7 +187,7 @@ export default function TwoToTwoQuery() {
   if (dbLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
       </div>
     )
@@ -122,11 +213,11 @@ export default function TwoToTwoQuery() {
       <div className="card p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Query Parameters</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
           {/* Input Element 1 Selection (E1) */}
           <PeriodicTableSelector
             label="Input Element 1 (E1)"
-            availableElements={availableElements}
+            availableElements={elements}
             selectedElements={selectedElement1}
             onSelectionChange={setSelectedElement1}
           />
@@ -134,9 +225,25 @@ export default function TwoToTwoQuery() {
           {/* Input Element 2 Selection (E2) */}
           <PeriodicTableSelector
             label="Input Element 2 (E2)"
-            availableElements={availableElements}
+            availableElements={elements}
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
+          />
+
+          {/* Output Element 3 Selection (E3) */}
+          <PeriodicTableSelector
+            label="Output Element 3 (E3)"
+            availableElements={elements}
+            selectedElements={selectedOutputElement3}
+            onSelectionChange={setSelectedOutputElement3}
+          />
+
+          {/* Output Element 4 Selection (E4) */}
+          <PeriodicTableSelector
+            label="Output Element 4 (E4)"
+            availableElements={elements}
+            selectedElements={selectedOutputElement4}
+            onSelectionChange={setSelectedOutputElement4}
             align="right"
           />
 
@@ -210,13 +317,15 @@ export default function TwoToTwoQuery() {
                 elements: [],
                 minMeV: undefined,
                 maxMeV: undefined,
-                neutrinoTypes: ['none', 'left', 'right'],
-                limit: 100,
+                neutrinoTypes: DEFAULT_NEUTRINO_TYPES as any[],
+                limit: DEFAULT_LIMIT,
                 orderBy: 'MeV',
                 orderDirection: 'desc'
               })
-              setSelectedElement1([])
-              setSelectedElement2([])
+              setSelectedElement1(DEFAULT_ELEMENT1)
+              setSelectedElement2(DEFAULT_ELEMENT2)
+              setSelectedOutputElement3(DEFAULT_OUTPUT_ELEMENT3)
+              setSelectedOutputElement4(DEFAULT_OUTPUT_ELEMENT4)
             }}
             className="btn btn-secondary px-6 py-2"
           >
@@ -224,7 +333,7 @@ export default function TwoToTwoQuery() {
           </button>
           {isQuerying && (
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <Loader className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Querying...</span>
             </div>
           )}
@@ -237,11 +346,15 @@ export default function TwoToTwoQuery() {
           </div>
           <code className="text-xs text-gray-600 dark:text-gray-400 block font-mono whitespace-pre-wrap">
             SELECT * FROM TwoToTwoAll
-            {(selectedElement1.length > 0 || selectedElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || selectedOutputElement3.length > 0 || selectedOutputElement4.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
             {selectedElement1.length > 0 && `E1 IN (${selectedElement1.map(e => `'${e}'`).join(', ')})`}
-            {selectedElement1.length > 0 && selectedElement2.length > 0 && ' AND '}
+            {selectedElement1.length > 0 && (selectedElement2.length > 0 || selectedOutputElement3.length > 0 || selectedOutputElement4.length > 0) && ' AND '}
             {selectedElement2.length > 0 && `E2 IN (${selectedElement2.map(e => `'${e}'`).join(', ')})`}
-            {(selectedElement1.length > 0 || selectedElement2.length > 0) && filter.minMeV !== undefined && ' AND '}
+            {selectedElement2.length > 0 && (selectedOutputElement3.length > 0 || selectedOutputElement4.length > 0) && ' AND '}
+            {selectedOutputElement3.length > 0 && `E3 IN (${selectedOutputElement3.map(e => `'${e}'`).join(', ')})`}
+            {selectedOutputElement3.length > 0 && selectedOutputElement4.length > 0 && ' AND '}
+            {selectedOutputElement4.length > 0 && `E4 IN (${selectedOutputElement4.map(e => `'${e}'`).join(', ')})`}
+            {(selectedElement1.length > 0 || selectedElement2.length > 0 || selectedOutputElement3.length > 0 || selectedOutputElement4.length > 0) && filter.minMeV !== undefined && ' AND '}
             {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
             {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
@@ -261,64 +374,158 @@ export default function TwoToTwoQuery() {
                     : `Showing ${results.length.toLocaleString()} of ${totalCount.toLocaleString()} matching reactions`
                   }
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Query executed in {queryTime.toFixed(2)}ms
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Query executed in {executionTime.toFixed(2)}ms
                   {results.length < totalCount && (
                     <span className="ml-2">• Increase limit to see more results</span>
                   )}
                 </p>
               </div>
-              <button
-                onClick={exportToCSV}
-                className="btn btn-secondary px-4 py-2 text-sm"
-                disabled={results.length === 0}
-              >
-                <Download className="w-4 h-4 mr-2 inline" />
-                Export CSV
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowBosonFermion(!showBosonFermion)}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  title={showBosonFermion ? 'Hide Boson/Fermion columns' : 'Show Boson/Fermion columns'}
+                >
+                  {showBosonFermion ? <EyeOff className="w-4 h-4 mr-2 inline" /> : <Eye className="w-4 h-4 mr-2 inline" />}
+                  {showBosonFermion ? 'Hide' : 'Show'} B/F Types
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  disabled={results.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export CSV
+                </button>
+              </div>
             </div>
 
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={6} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
-                    <th colSpan={6} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
-                    <th rowSpan={2}>Energy (MeV)</th>
+                    <th colSpan={2} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
+                    <th colSpan={2} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
+                    <th rowSpan={2}>Energy<br/>(MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
+                    {showBosonFermion && (
+                      <>
+                        <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 1 Type</th>
+                        <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 2 Type</th>
+                        <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output 3 Type</th>
+                        <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output 4 Type</th>
+                      </>
+                    )}
                   </tr>
                   <tr>
-                    <th>E1</th>
-                    <th>Z1</th>
-                    <th>A1</th>
-                    <th>E2</th>
-                    <th>Z2</th>
-                    <th>A2</th>
-                    <th>E3</th>
-                    <th>Z3</th>
-                    <th>A3</th>
-                    <th>E4</th>
-                    <th>Z4</th>
-                    <th>A4</th>
+                    <th className="bg-blue-50 dark:bg-blue-900/30">Input 1</th>
+                    <th className="bg-blue-50 dark:bg-blue-900/30">Input 2</th>
+                    <th className="bg-green-50 dark:bg-green-900/30">Output 3</th>
+                    <th className="bg-green-50 dark:bg-green-900/30">Output 4</th>
+                    {showBosonFermion && (
+                      <>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E1}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z1}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A1}</td>
-                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E2}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z2}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A2}</td>
-                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E3}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z3}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A3}</td>
-                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E4}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z4}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A4}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E1}-{reaction.A1}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
+                      </td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E2}-{reaction.A2}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z2})</div>
+                      </td>
+                      <td className="bg-green-50 dark:bg-green-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E3}-{reaction.A3}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z3})</div>
+                      </td>
+                      <td className="bg-green-50 dark:bg-green-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E4}-{reaction.A4}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z4})</div>
+                      </td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
-                      <td>{reaction.neutrino}</td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.neutrino === 'none' ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                          reaction.neutrino === 'left' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                          'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                        }`}>
+                          {reaction.neutrino}
+                        </span>
+                      </td>
+                      {showBosonFermion && (
+                        <>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF3 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF3 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF3 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF3 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF4 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF4 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF4 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF4 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -343,10 +550,10 @@ export default function TwoToTwoQuery() {
 
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Elements in Results ({elements.length})
+                Elements in Results ({resultElements.length})
               </h3>
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                {elements.map((el) => (
+                {resultElements.map((el) => (
                   <div key={el.Z} className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded text-sm">
                     <div className="font-semibold text-gray-900 dark:text-gray-100">{el.E}</div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">{el.EName}</div>

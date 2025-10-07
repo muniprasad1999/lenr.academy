@@ -81,6 +81,10 @@ export default function FusionQuery() {
     // Default to show (on) for desktop (≥768px), hide (off) for mobile
     return window.innerWidth >= 768
   })
+  const [highlightedNuclide, setHighlightedNuclide] = useState<string | null>(null)
+  const [pinnedNuclide, setPinnedNuclide] = useState(false)
+  const [highlightedElement, setHighlightedElement] = useState<string | null>(null)
+  const [pinnedElement, setPinnedElement] = useState(false)
 
   // Load elements when database is ready
   useEffect(() => {
@@ -194,6 +198,22 @@ export default function FusionQuery() {
     a.href = url
     a.download = `fusion_reactions_${Date.now()}.csv`
     a.click()
+  }
+
+  // Helper function to check if a reaction contains a specific nuclide
+  const reactionContainsNuclide = (reaction: FusionReaction, nuclide: string) => {
+    const [element, mass] = nuclide.split('-')
+    const A = parseInt(mass)
+    return (
+      (reaction.E1 === element && reaction.A1 === A) ||
+      (reaction.E2 === element && reaction.A2 === A) ||
+      (reaction.E === element && reaction.A === A)
+    )
+  }
+
+  // Helper function to check if a reaction contains a specific element
+  const reactionContainsElement = (reaction: FusionReaction, element: string) => {
+    return reaction.E1 === element || reaction.E2 === element || reaction.E === element
   }
 
   if (dbLoading) {
@@ -448,8 +468,16 @@ export default function FusionQuery() {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map((reaction, idx) => (
-                    <tr key={idx}>
+                  {results.map((reaction, idx) => {
+                    // Determine if this row should be desaturated
+                    const activeNuclide = pinnedNuclide ? highlightedNuclide : highlightedNuclide
+                    const activeElement = pinnedElement ? highlightedElement : highlightedElement
+                    const nuclideMatch = !activeNuclide || reactionContainsNuclide(reaction, activeNuclide)
+                    const elementMatch = !activeElement || reactionContainsElement(reaction, activeElement)
+                    const isDesaturated = (activeNuclide && !nuclideMatch) || (activeElement && !elementMatch)
+
+                    return (
+                    <tr key={idx} className={isDesaturated ? 'opacity-30 grayscale' : 'transition-all duration-200'}>
                       <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
                         <div className="font-semibold text-base">{reaction.E1}-{reaction.A1}</div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
@@ -520,7 +548,8 @@ export default function FusionQuery() {
                         </>
                       )}
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -532,12 +561,38 @@ export default function FusionQuery() {
               Nuclides Appearing in Results ({nuclides.length})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {nuclides.map(nuc => (
-                <div key={nuc.id} className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+              {nuclides.map(nuc => {
+                const nuclideId = `${nuc.E}-${nuc.A}`
+                const isActive = highlightedNuclide === nuclideId
+                const isPinned = pinnedNuclide && highlightedNuclide === nuclideId
+                const isDesaturated = highlightedNuclide && highlightedNuclide !== nuclideId
+
+                return (
+                <div
+                  key={nuc.id}
+                  className={`px-3 py-2 rounded border cursor-pointer transition-all duration-200 ${
+                    isPinned ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-600 ring-2 ring-blue-400' :
+                    isActive ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' :
+                    isDesaturated ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-40' :
+                    'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  onMouseEnter={() => !pinnedNuclide && setHighlightedNuclide(nuclideId)}
+                  onMouseLeave={() => !pinnedNuclide && setHighlightedNuclide(null)}
+                  onClick={() => {
+                    if (pinnedNuclide && highlightedNuclide === nuclideId) {
+                      setPinnedNuclide(false)
+                      setHighlightedNuclide(null)
+                    } else {
+                      setPinnedNuclide(true)
+                      setHighlightedNuclide(nuclideId)
+                    }
+                  }}
+                >
                   <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{nuc.E}-{nuc.A}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Z={nuc.Z}</div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -547,13 +602,39 @@ export default function FusionQuery() {
               Elements Appearing in Results ({resultElements.length})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {resultElements.map(el => (
-                <div key={el.Z} className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
+              {resultElements.map(el => {
+                const elementId = el.E
+                const isActive = highlightedElement === elementId
+                const isPinned = pinnedElement && highlightedElement === elementId
+                const isDesaturated = highlightedElement && highlightedElement !== elementId
+
+                return (
+                <div
+                  key={el.Z}
+                  className={`px-3 py-2 rounded border cursor-pointer transition-all duration-200 ${
+                    isPinned ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-600 ring-2 ring-blue-400' :
+                    isActive ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' :
+                    isDesaturated ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 opacity-40' :
+                    'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                  }`}
+                  onMouseEnter={() => !pinnedElement && setHighlightedElement(elementId)}
+                  onMouseLeave={() => !pinnedElement && setHighlightedElement(null)}
+                  onClick={() => {
+                    if (pinnedElement && highlightedElement === elementId) {
+                      setPinnedElement(false)
+                      setHighlightedElement(null)
+                    } else {
+                      setPinnedElement(true)
+                      setHighlightedElement(elementId)
+                    }
+                  }}
+                >
                   <div className="font-bold text-lg text-blue-900 dark:text-blue-200">{el.E}</div>
                   <div className="text-xs text-blue-700 dark:text-blue-300">{el.EName}</div>
                   <div className="text-xs text-blue-600 dark:text-blue-400">Z={el.Z}</div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

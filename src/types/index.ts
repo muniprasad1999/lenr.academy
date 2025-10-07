@@ -119,6 +119,8 @@ export interface QueryFilter {
   outputElementList?: string[];  // For E in fusion (output element)
   outputElement1List?: string[];  // For E1 in fission (output element 1)
   outputElement2List?: string[];  // For E2 in fission (output element 2)
+  outputElement3List?: string[];  // For E3 in two-to-two (output element 3)
+  outputElement4List?: string[];  // For E4 in two-to-two (output element 4)
   minMeV?: number;
   maxMeV?: number;
   neutrinoTypes?: NeutrinoType[];
