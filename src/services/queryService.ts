@@ -72,6 +72,24 @@ function buildWhereClause(filter: QueryFilter, tableType: 'fusion' | 'fission' |
     }
   }
 
+  // Fission output element 1 filter
+  if (filter.outputElement1List && filter.outputElement1List.length > 0) {
+    const expandedElements = expandElementList(filter.outputElement1List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
+    if (tableType === 'fission') {
+      conditions.push(`E1 IN (${elements})`);
+    }
+  }
+
+  // Fission output element 2 filter
+  if (filter.outputElement2List && filter.outputElement2List.length > 0) {
+    const expandedElements = expandElementList(filter.outputElement2List);
+    const elements = expandedElements.map(e => `'${e}'`).join(',');
+    if (tableType === 'fission') {
+      conditions.push(`E2 IN (${elements})`);
+    }
+  }
+
   // Legacy elements filter (for backwards compatibility)
   if (filter.elements && filter.elements.length > 0) {
     const elements = filter.elements.map(e => `'${e}'`).join(',');

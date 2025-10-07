@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Info, Loader } from 'lucide-react'
+import { Search, Download, Info, Loader, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { FissionReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
@@ -8,6 +8,8 @@ import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
 // Default values
 const DEFAULT_ELEMENT: string[] = ['Zr']
+const DEFAULT_OUTPUT_ELEMENT1: string[] = []
+const DEFAULT_OUTPUT_ELEMENT2: string[] = []
 const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
 const DEFAULT_LIMIT = 100
 
@@ -21,6 +23,16 @@ export default function FissionQuery() {
   const getInitialElement = () => {
     const param = searchParams.get('e')
     return param ? param.split(',') : DEFAULT_ELEMENT
+  }
+
+  const getInitialOutputElement1 = () => {
+    const param = searchParams.get('e1')
+    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT1
+  }
+
+  const getInitialOutputElement2 = () => {
+    const param = searchParams.get('e2')
+    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT2
   }
 
   const getInitialMinMeV = () => {
@@ -56,11 +68,19 @@ export default function FissionQuery() {
   const [results, setResults] = useState<FissionReaction[]>([])
   const [showResults, setShowResults] = useState(false)
   const [selectedElement, setSelectedElement] = useState<string[]>(getInitialElement())
+  const [selectedOutputElement1, setSelectedOutputElement1] = useState<string[]>(getInitialOutputElement1())
+  const [selectedOutputElement2, setSelectedOutputElement2] = useState<string[]>(getInitialOutputElement2())
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [queryTime, setQueryTime] = useState<number>(0)
   const [totalCount, setTotalCount] = useState(0)
   const [isQuerying, setIsQuerying] = useState(false)
+  const [showBosonFermion, setShowBosonFermion] = useState(() => {
+    const saved = localStorage.getItem('showBosonFermion')
+    if (saved !== null) return JSON.parse(saved)
+    // Default to show (on) for desktop (≥768px), hide (off) for mobile
+    return window.innerWidth >= 768
+  })
 
   // Load elements when database is ready
   useEffect(() => {
@@ -71,6 +91,11 @@ export default function FissionQuery() {
     }
   }, [db])
 
+  // Save B/F toggle to localStorage
+  useEffect(() => {
+    localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
+  }, [showBosonFermion])
+
   // Update URL when filters change
   useEffect(() => {
     if (!isInitialized) return
@@ -79,6 +104,14 @@ export default function FissionQuery() {
 
     if (selectedElement.length > 0) {
       params.set('e', selectedElement.join(','))
+    }
+
+    if (selectedOutputElement1.length > 0) {
+      params.set('e1', selectedOutputElement1.join(','))
+    }
+
+    if (selectedOutputElement2.length > 0) {
+      params.set('e2', selectedOutputElement2.join(','))
     }
 
     if (filter.minMeV !== undefined) {
@@ -98,14 +131,14 @@ export default function FissionQuery() {
     }
 
     setSearchParams(params, { replace: true })
-  }, [selectedElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
+  }, [selectedElement, selectedOutputElement1, selectedOutputElement2, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
 
   // Auto-execute query when filters change
   useEffect(() => {
     if (db) {
       handleQuery()
     }
-  }, [db, selectedElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit])
+  }, [db, selectedElement, selectedOutputElement1, selectedOutputElement2, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit])
 
   const handleQuery = () => {
     if (!db) return
@@ -115,7 +148,9 @@ export default function FissionQuery() {
       // Build filter with selected elements
       const queryFilter: QueryFilter = {
         ...filter,
-        elements: selectedElement.length > 0 ? selectedElement : undefined
+        elements: selectedElement.length > 0 ? selectedElement : undefined,
+        outputElement1List: selectedOutputElement1.length > 0 ? selectedOutputElement1 : undefined,
+        outputElement2List: selectedOutputElement2.length > 0 ? selectedOutputElement2 : undefined
       }
 
       const result = queryFission(db, queryFilter)
@@ -182,13 +217,31 @@ export default function FissionQuery() {
       <div className="card p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Query Parameters</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Input Element Selection (E) */}
           <PeriodicTableSelector
             label="Input Element (E)"
             availableElements={availableElements}
             selectedElements={selectedElement}
             onSelectionChange={setSelectedElement}
+          />
+
+          {/* Output Element 1 Selection (E1) */}
+          <PeriodicTableSelector
+            label="Output Element 1 (E1)"
+            availableElements={availableElements}
+            selectedElements={selectedOutputElement1}
+            onSelectionChange={setSelectedOutputElement1}
+            align="center"
+          />
+
+          {/* Output Element 2 Selection (E2) */}
+          <PeriodicTableSelector
+            label="Output Element 2 (E2)"
+            availableElements={availableElements}
+            selectedElements={selectedOutputElement2}
+            onSelectionChange={setSelectedOutputElement2}
+            align="right"
           />
 
           <div>
@@ -267,6 +320,8 @@ export default function FissionQuery() {
                 orderDirection: 'desc'
               })
               setSelectedElement(DEFAULT_ELEMENT)
+              setSelectedOutputElement1(DEFAULT_OUTPUT_ELEMENT1)
+              setSelectedOutputElement2(DEFAULT_OUTPUT_ELEMENT2)
             }}
             className="btn btn-secondary px-6 py-2"
           >
@@ -287,9 +342,13 @@ export default function FissionQuery() {
           </div>
           <code className="text-xs text-gray-600 dark:text-gray-400 block font-mono whitespace-pre-wrap">
             SELECT * FROM FissionAll
-            {(selectedElement.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {(selectedElement.length > 0 || selectedOutputElement1.length > 0 || selectedOutputElement2.length > 0 || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
             {selectedElement.length > 0 && `E IN (${selectedElement.map(e => `'${e}'`).join(', ')})`}
-            {selectedElement.length > 0 && filter.minMeV !== undefined && ' AND '}
+            {selectedElement.length > 0 && (selectedOutputElement1.length > 0 || selectedOutputElement2.length > 0) && ' AND '}
+            {selectedOutputElement1.length > 0 && `E1 IN (${selectedOutputElement1.map(e => `'${e}'`).join(', ')})`}
+            {selectedOutputElement1.length > 0 && selectedOutputElement2.length > 0 && ' AND '}
+            {selectedOutputElement2.length > 0 && `E2 IN (${selectedOutputElement2.map(e => `'${e}'`).join(', ')})`}
+            {(selectedElement.length > 0 || selectedOutputElement1.length > 0 || selectedOutputElement2.length > 0) && filter.minMeV !== undefined && ' AND '}
             {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
             {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
@@ -316,49 +375,72 @@ export default function FissionQuery() {
                   )}
                 </p>
               </div>
-              <button
-                onClick={exportToCSV}
-                className="btn btn-secondary px-4 py-2 text-sm"
-                disabled={results.length === 0}
-              >
-                <Download className="w-4 h-4 mr-2 inline" />
-                Export CSV
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowBosonFermion(!showBosonFermion)}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  title={showBosonFermion ? 'Hide Boson/Fermion columns' : 'Show Boson/Fermion columns'}
+                >
+                  {showBosonFermion ? <EyeOff className="w-4 h-4 mr-2 inline" /> : <Eye className="w-4 h-4 mr-2 inline" />}
+                  {showBosonFermion ? 'Hide' : 'Show'} B/F Types
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  disabled={results.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export CSV
+                </button>
+              </div>
             </div>
 
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={3} className="bg-blue-50 dark:bg-blue-900/30">Input</th>
-                    <th colSpan={6} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
+                    <th rowSpan={2} className="bg-blue-50 dark:bg-blue-900/30">Input</th>
+                    <th colSpan={2} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
                     <th rowSpan={2}>Energy<br/>(MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
+                    {showBosonFermion && (
+                      <>
+                        <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input Type</th>
+                        <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output 1 Type</th>
+                        <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output 2 Type</th>
+                      </>
+                    )}
                   </tr>
                   <tr>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
+                    <th className="bg-green-50 dark:bg-green-900/30">Output 1</th>
+                    <th className="bg-green-50 dark:bg-green-900/30">Output 2</th>
+                    {showBosonFermion && (
+                      <>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A}</td>
-                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E1}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z1}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A1}</td>
-                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E2}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z2}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A2}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E}-{reaction.A}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z})</div>
+                      </td>
+                      <td className="bg-green-50 dark:bg-green-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E1}-{reaction.A1}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
+                      </td>
+                      <td className="bg-green-50 dark:bg-green-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E2}-{reaction.A2}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z2})</div>
+                      </td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -370,6 +452,55 @@ export default function FissionQuery() {
                            reaction.neutrino === 'left' ? 'Left' : 'Right'}
                         </span>
                       </td>
+                      {showBosonFermion && (
+                        <>
+                          {/* Input Type */}
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          {/* Output 1 Type */}
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          {/* Output 2 Type */}
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>

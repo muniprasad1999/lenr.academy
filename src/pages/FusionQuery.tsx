@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Info, Loader2, AlertCircle } from 'lucide-react'
+import { Search, Download, Info, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
@@ -75,6 +75,12 @@ export default function FusionQuery() {
   const [isQuerying, setIsQuerying] = useState(false)
   const [executionTime, setExecutionTime] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [showBosonFermion, setShowBosonFermion] = useState(() => {
+    const saved = localStorage.getItem('showBosonFermion')
+    if (saved !== null) return JSON.parse(saved)
+    // Default to show (on) for desktop (≥768px), hide (off) for mobile
+    return window.innerWidth >= 768
+  })
 
   // Load elements when database is ready
   useEffect(() => {
@@ -84,6 +90,11 @@ export default function FusionQuery() {
       setIsInitialized(true)
     }
   }, [db])
+
+  // Save B/F toggle to localStorage
+  useEffect(() => {
+    localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
+  }, [showBosonFermion])
 
   // Update URL when filters change
   useEffect(() => {
@@ -385,58 +396,72 @@ export default function FusionQuery() {
                   )}
                 </p>
               </div>
-              <button
-                onClick={exportToCSV}
-                className="btn btn-secondary px-4 py-2 text-sm"
-                disabled={results.length === 0}
-              >
-                <Download className="w-4 h-4 mr-2 inline" />
-                Export CSV
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowBosonFermion(!showBosonFermion)}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  title={showBosonFermion ? 'Hide Boson/Fermion columns' : 'Show Boson/Fermion columns'}
+                >
+                  {showBosonFermion ? <EyeOff className="w-4 h-4 mr-2 inline" /> : <Eye className="w-4 h-4 mr-2 inline" />}
+                  {showBosonFermion ? 'Hide' : 'Show'} B/F Types
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="btn btn-secondary px-4 py-2 text-sm"
+                  disabled={results.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2 inline" />
+                  Export CSV
+                </button>
+              </div>
             </div>
 
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th colSpan={6} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
-                    <th colSpan={3} className="bg-green-50 dark:bg-green-900/30">Output</th>
+                    <th colSpan={2} className="bg-blue-50 dark:bg-blue-900/30">Inputs</th>
+                    <th rowSpan={2} className="bg-green-50 dark:bg-green-900/30">Output</th>
                     <th rowSpan={2}>Energy<br/>(MeV)</th>
                     <th rowSpan={2}>Neutrino</th>
-                    <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 1 Type</th>
-                    <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 2 Type</th>
-                    <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output Type</th>
+                    {showBosonFermion && (
+                      <>
+                        <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 1 Type</th>
+                        <th colSpan={2} className="bg-purple-50 dark:bg-purple-900/30">Input 2 Type</th>
+                        <th colSpan={2} className="bg-amber-50 dark:bg-amber-900/30">Output Type</th>
+                      </>
+                    )}
                   </tr>
                   <tr>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
-                    <th>Element</th>
-                    <th>Z</th>
-                    <th>A</th>
-                    <th>Nuclear</th>
-                    <th>Atomic</th>
-                    <th>Nuclear</th>
-                    <th>Atomic</th>
-                    <th>Nuclear</th>
-                    <th>Atomic</th>
+                    <th className="bg-blue-50 dark:bg-blue-900/30">Input 1</th>
+                    <th className="bg-blue-50 dark:bg-blue-900/30">Input 2</th>
+                    {showBosonFermion && (
+                      <>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                        <th>Nuclear</th>
+                        <th>Atomic</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E1}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z1}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A1}</td>
-                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E2}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z2}</td>
-                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A2}</td>
-                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z}</td>
-                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E1}-{reaction.A1}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
+                      </td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E2}-{reaction.A2}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z2})</div>
+                      </td>
+                      <td className="bg-green-50 dark:bg-green-900/30 text-center">
+                        <div className="font-semibold text-base">{reaction.E}-{reaction.A}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z})</div>
+                      </td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
                       <td>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -448,48 +473,52 @@ export default function FusionQuery() {
                            reaction.neutrino === 'left' ? 'Left' : 'Right'}
                         </span>
                       </td>
-                      <td className="bg-purple-50 dark:bg-purple-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
-                      <td className="bg-purple-50 dark:bg-purple-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
-                      <td className="bg-purple-50 dark:bg-purple-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
-                      <td className="bg-purple-50 dark:bg-purple-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
-                      <td className="bg-amber-50 dark:bg-amber-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.nBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.nBorF === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
-                      <td className="bg-amber-50 dark:bg-amber-900/30">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reaction.aBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                        }`}>
-                          {reaction.aBorF === 'b' ? 'Boson' : 'Fermion'}
-                        </span>
-                      </td>
+                      {showBosonFermion && (
+                        <>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF1 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF1 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-purple-50 dark:bg-purple-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF2 === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF2 === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.nBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.nBorF === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                          <td className="bg-amber-50 dark:bg-amber-900/30">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reaction.aBorF === 'b' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                            }`}>
+                              {reaction.aBorF === 'b' ? 'Boson' : 'Fermion'}
+                            </span>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
