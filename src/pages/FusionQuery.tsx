@@ -3,8 +3,9 @@ import { Search, Download, Info, Loader2, AlertCircle, Eye, EyeOff } from 'lucid
 import { useSearchParams } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
-import { queryFusion, getAllElements } from '../services/queryService'
+import { queryFusion, getAllElements, getElementBySymbol } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
+import ElementDetailsCard from '../components/ElementDetailsCard'
 
 // Default values
 const DEFAULT_ELEMENT1 = ['H']
@@ -85,6 +86,7 @@ export default function FusionQuery() {
   const [pinnedNuclide, setPinnedNuclide] = useState(false)
   const [highlightedElement, setHighlightedElement] = useState<string | null>(null)
   const [pinnedElement, setPinnedElement] = useState(false)
+  const [selectedElementDetails, setSelectedElementDetails] = useState<Element | null>(null)
 
   // Load elements when database is ready
   useEffect(() => {
@@ -99,6 +101,32 @@ export default function FusionQuery() {
   useEffect(() => {
     localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
   }, [showBosonFermion])
+
+  // Fetch element details when an element or nuclide is pinned
+  useEffect(() => {
+    if (!db) {
+      setSelectedElementDetails(null)
+      return
+    }
+
+    // Check if element is pinned
+    if (pinnedElement && highlightedElement) {
+      const elementDetails = getElementBySymbol(db, highlightedElement)
+      setSelectedElementDetails(elementDetails)
+      return
+    }
+
+    // Check if nuclide is pinned - extract element symbol from "Element-Mass" format
+    if (pinnedNuclide && highlightedNuclide) {
+      const elementSymbol = highlightedNuclide.split('-')[0]
+      const elementDetails = getElementBySymbol(db, elementSymbol)
+      setSelectedElementDetails(elementDetails)
+      return
+    }
+
+    // Nothing pinned
+    setSelectedElementDetails(null)
+  }, [db, pinnedElement, highlightedElement, pinnedNuclide, highlightedNuclide])
 
   // Update URL when filters change
   useEffect(() => {
@@ -636,6 +664,26 @@ export default function FusionQuery() {
                 )
               })}
             </div>
+          </div>
+
+          {/* Element Details */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Element Details
+            </h3>
+            {selectedElementDetails ? (
+              <ElementDetailsCard
+                element={selectedElementDetails}
+                onClose={() => {
+                  setPinnedElement(false)
+                  setHighlightedElement(null)
+                }}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p className="text-sm">Click on a nuclide or element above to see detailed properties</p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -480,6 +480,26 @@ export function getAllElements(db: Database): Element[] {
 }
 
 /**
+ * Get a specific element by its symbol
+ */
+export function getElementBySymbol(db: Database, symbol: string): Element | null {
+  const sql = 'SELECT * FROM ElementsPlus WHERE E = ?';
+  const results = db.exec(sql, [symbol]);
+
+  if (results.length > 0 && results[0].values.length > 0) {
+    const columns = results[0].columns;
+    const row = results[0].values[0];
+    const element: any = {};
+    columns.forEach((col, idx) => {
+      element[col] = row[idx];
+    });
+    return element as Element;
+  }
+
+  return null;
+}
+
+/**
  * Get all nuclides from database
  */
 export function getAllNuclides(db: Database): Nuclide[] {
