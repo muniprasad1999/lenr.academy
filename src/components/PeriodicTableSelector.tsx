@@ -8,6 +8,7 @@ interface PeriodicTableSelectorProps {
   selectedElements: string[]
   onSelectionChange: (elements: string[]) => void
   maxSelections?: number
+  align?: 'left' | 'center' | 'right'
 }
 
 // Standard periodic table layout (Period, Group) for each element by atomic number
@@ -138,6 +139,7 @@ export default function PeriodicTableSelector({
   selectedElements,
   onSelectionChange,
   maxSelections,
+  align = 'left',
 }: PeriodicTableSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -288,7 +290,14 @@ export default function PeriodicTableSelector({
 
       {/* Periodic Table Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 w-full min-w-[800px]">
+        <div className={`
+          fixed sm:absolute z-50
+          inset-x-4 top-20 sm:inset-x-auto sm:top-auto sm:mt-2
+          max-h-[calc(100vh-6rem)] sm:max-h-none overflow-y-auto sm:overflow-visible
+          bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4
+          w-auto sm:w-full sm:min-w-[600px] lg:min-w-[800px]
+          ${align === 'right' ? 'sm:right-0' : align === 'center' ? 'sm:left-1/2 sm:-translate-x-1/2' : ''}
+        `}>
           <div className="mb-3 flex justify-between items-center">
             <h3 className="font-semibold text-gray-900 dark:text-white">Select Elements</h3>
             {selectedElements.length > 0 && (
@@ -369,9 +378,9 @@ export default function PeriodicTableSelector({
 
         .periodic-cell {
           position: relative;
-          padding: 4px;
-          min-width: 38px;
-          min-height: 38px;
+          padding: 2px;
+          min-width: 28px;
+          min-height: 28px;
           border: 1px solid #d1d5db;
           border-radius: 4px;
           background: white;
@@ -381,6 +390,22 @@ export default function PeriodicTableSelector({
           flex-direction: column;
           align-items: center;
           justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+          .periodic-cell {
+            padding: 3px;
+            min-width: 32px;
+            min-height: 32px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .periodic-cell {
+            padding: 4px;
+            min-width: 38px;
+            min-height: 38px;
+          }
         }
 
         .dark .periodic-cell {
@@ -424,28 +449,84 @@ export default function PeriodicTableSelector({
         }
 
         .periodic-cell-number {
-          font-size: 8px;
+          font-size: 6px;
           line-height: 1;
-          margin-bottom: 2px;
+          margin-bottom: 1px;
+        }
+
+        @media (min-width: 640px) {
+          .periodic-cell-number {
+            font-size: 7px;
+            margin-bottom: 2px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .periodic-cell-number {
+            font-size: 8px;
+          }
         }
 
         .periodic-cell-symbol {
-          font-size: 13px;
+          font-size: 10px;
           font-weight: 600;
           line-height: 1;
         }
 
+        @media (min-width: 640px) {
+          .periodic-cell-symbol {
+            font-size: 11px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .periodic-cell-symbol {
+            font-size: 13px;
+          }
+        }
+
         .periodic-cell-empty {
-          min-width: 38px;
-          min-height: 38px;
+          min-width: 28px;
+          min-height: 28px;
+        }
+
+        @media (min-width: 640px) {
+          .periodic-cell-empty {
+            min-width: 32px;
+            min-height: 32px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .periodic-cell-empty {
+            min-width: 38px;
+            min-height: 38px;
+          }
         }
 
         .periodic-cell-placeholder {
-          min-width: 38px;
-          min-height: 38px;
+          min-width: 28px;
+          min-height: 28px;
           border: 1px dashed #d1d5db;
           border-radius: 4px;
           background: #f9fafb;
+          font-size: 8px;
+        }
+
+        @media (min-width: 640px) {
+          .periodic-cell-placeholder {
+            min-width: 32px;
+            min-height: 32px;
+            font-size: 9px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .periodic-cell-placeholder {
+            min-width: 38px;
+            min-height: 38px;
+            font-size: 10px;
+          }
         }
 
         .dark .periodic-cell-placeholder {

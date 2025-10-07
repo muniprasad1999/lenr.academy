@@ -26,6 +26,7 @@ export default function TwoToTwoQuery() {
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [queryTime, setQueryTime] = useState<number>(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [isQuerying, setIsQuerying] = useState(false)
 
   // Load elements when database is ready
@@ -63,6 +64,7 @@ export default function TwoToTwoQuery() {
       setElements(result.elements)
       setNuclides(result.nuclides)
       setQueryTime(result.executionTime)
+      setTotalCount(result.totalCount)
       setShowResults(true)
     } catch (error) {
       console.error('Query failed:', error)
@@ -135,6 +137,7 @@ export default function TwoToTwoQuery() {
             availableElements={availableElements}
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
+            align="right"
           />
 
           <div>
@@ -253,10 +256,16 @@ export default function TwoToTwoQuery() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Results: {results.length} reactions found
+                  {results.length === totalCount
+                    ? `Showing all ${totalCount.toLocaleString()} matching reactions`
+                    : `Showing ${results.length.toLocaleString()} of ${totalCount.toLocaleString()} matching reactions`
+                  }
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Query executed in {queryTime.toFixed(2)}ms
+                  {results.length < totalCount && (
+                    <span className="ml-2">• Increase limit to see more results</span>
+                  )}
                 </p>
               </div>
               <button

@@ -8,7 +8,7 @@ import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
 // Default values
 const DEFAULT_ELEMENT1 = ['H']
-const DEFAULT_ELEMENT2 = ['H', 'C', 'O']
+const DEFAULT_ELEMENT2 = ['C', 'O']
 const DEFAULT_OUTPUT_ELEMENT: string[] = []
 const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
 const DEFAULT_LIMIT = 100
@@ -74,6 +74,7 @@ export default function FusionQuery() {
   const [selectedOutputElement, setSelectedOutputElement] = useState<string[]>(getInitialOutputElement())
   const [isQuerying, setIsQuerying] = useState(false)
   const [executionTime, setExecutionTime] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   // Load elements when database is ready
   useEffect(() => {
@@ -155,6 +156,7 @@ export default function FusionQuery() {
       setNuclides(result.nuclides)
       setResultElements(result.elements)
       setExecutionTime(result.executionTime)
+      setTotalCount(result.totalCount)
       setShowResults(true)
     } catch (error) {
       console.error('Query failed:', error)
@@ -234,6 +236,7 @@ export default function FusionQuery() {
             availableElements={elements}
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
+            align="center"
           />
 
           {/* Output Element Selection (E) */}
@@ -242,6 +245,7 @@ export default function FusionQuery() {
             availableElements={elements}
             selectedElements={selectedOutputElement}
             onSelectionChange={setSelectedOutputElement}
+            align="right"
           />
 
           {/* MeV Range */}
@@ -369,9 +373,17 @@ export default function FusionQuery() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Results: {results.length} reactions found
+                  {results.length === totalCount
+                    ? `Showing all ${totalCount.toLocaleString()} matching reactions`
+                    : `Showing ${results.length.toLocaleString()} of ${totalCount.toLocaleString()} matching reactions`
+                  }
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Query executed in {executionTime.toFixed(2)}ms</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Query executed in {executionTime.toFixed(2)}ms
+                  {results.length < totalCount && (
+                    <span className="ml-2">• Increase limit to see more results</span>
+                  )}
+                </p>
               </div>
               <button
                 onClick={exportToCSV}

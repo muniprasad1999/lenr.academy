@@ -135,6 +135,7 @@ export interface QueryResult<T = Reaction> {
   elements: Element[];
   executionTime: number;
   rowCount: number;
+  totalCount: number;  // Total matching rows without limit
 }
 
 export interface CascadeParameters {

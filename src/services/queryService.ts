@@ -131,6 +131,12 @@ export function queryFusion(db: Database, filter: QueryFilter): QueryResult<Fusi
   const orderClause = buildOrderClause(filter);
   const limit = Math.min(filter.limit || 100, 1000);
 
+  // First, count total matching rows
+  const countSql = `SELECT COUNT(*) as total FROM FusionAll ${whereClause}`;
+  const countResult = db.exec(countSql);
+  const totalCount = (countResult[0]?.values[0]?.[0] as number) || 0;
+
+  // Then, fetch limited results
   const sql = `
     SELECT * FROM FusionAll
     ${whereClause}
@@ -166,6 +172,7 @@ export function queryFusion(db: Database, filter: QueryFilter): QueryResult<Fusi
     elements,
     executionTime,
     rowCount: reactions.length,
+    totalCount,
   };
 }
 
@@ -179,6 +186,12 @@ export function queryFission(db: Database, filter: QueryFilter): QueryResult<Fis
   const orderClause = buildOrderClause(filter);
   const limit = Math.min(filter.limit || 100, 1000);
 
+  // First, count total matching rows
+  const countSql = `SELECT COUNT(*) as total FROM FissionAll ${whereClause}`;
+  const countResult = db.exec(countSql);
+  const totalCount = (countResult[0]?.values[0]?.[0] as number) || 0;
+
+  // Then, fetch limited results
   const sql = `
     SELECT * FROM FissionAll
     ${whereClause}
@@ -213,6 +226,7 @@ export function queryFission(db: Database, filter: QueryFilter): QueryResult<Fis
     elements,
     executionTime,
     rowCount: reactions.length,
+    totalCount,
   };
 }
 
@@ -226,6 +240,12 @@ export function queryTwoToTwo(db: Database, filter: QueryFilter): QueryResult<Tw
   const orderClause = buildOrderClause(filter);
   const limit = Math.min(filter.limit || 100, 1000);
 
+  // First, count total matching rows
+  const countSql = `SELECT COUNT(*) as total FROM TwoToTwoAll ${whereClause}`;
+  const countResult = db.exec(countSql);
+  const totalCount = (countResult[0]?.values[0]?.[0] as number) || 0;
+
+  // Then, fetch limited results
   const sql = `
     SELECT * FROM TwoToTwoAll
     ${whereClause}
@@ -260,6 +280,7 @@ export function queryTwoToTwo(db: Database, filter: QueryFilter): QueryResult<Tw
     elements,
     executionTime,
     rowCount: reactions.length,
+    totalCount,
   };
 }
 

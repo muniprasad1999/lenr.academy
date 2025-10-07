@@ -1,30 +1,65 @@
 import { useState, useEffect } from 'react'
 import { Search, Download, Info, Loader } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import type { FissionReaction, QueryFilter, Element, Nuclide } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryFission, getAllElements } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 
+// Default values
+const DEFAULT_ELEMENT: string[] = ['Zr']
+const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
+const DEFAULT_LIMIT = 100
+
 export default function FissionQuery() {
   const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [availableElements, setAvailableElements] = useState<Element[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Parse URL parameters or use defaults
+  const getInitialElement = () => {
+    const param = searchParams.get('e')
+    return param ? param.split(',') : DEFAULT_ELEMENT
+  }
+
+  const getInitialMinMeV = () => {
+    const param = searchParams.get('minMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialMaxMeV = () => {
+    const param = searchParams.get('maxMeV')
+    return param ? parseFloat(param) : undefined
+  }
+
+  const getInitialNeutrinoTypes = () => {
+    const param = searchParams.get('neutrino')
+    return param ? param.split(',') : DEFAULT_NEUTRINO_TYPES
+  }
+
+  const getInitialLimit = () => {
+    const param = searchParams.get('limit')
+    return param ? parseInt(param) : DEFAULT_LIMIT
+  }
 
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
-    minMeV: undefined,
-    maxMeV: undefined,
-    neutrinoTypes: ['none', 'left', 'right'],
-    limit: 100,
+    minMeV: getInitialMinMeV(),
+    maxMeV: getInitialMaxMeV(),
+    neutrinoTypes: getInitialNeutrinoTypes() as any[],
+    limit: getInitialLimit(),
     orderBy: 'MeV',
     orderDirection: 'desc'
   })
 
   const [results, setResults] = useState<FissionReaction[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [selectedElement, setSelectedElement] = useState<string[]>([])
+  const [selectedElement, setSelectedElement] = useState<string[]>(getInitialElement())
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
   const [queryTime, setQueryTime] = useState<number>(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [isQuerying, setIsQuerying] = useState(false)
 
   // Load elements when database is ready
@@ -32,8 +67,38 @@ export default function FissionQuery() {
     if (db) {
       const allElements = getAllElements(db)
       setAvailableElements(allElements)
+      setIsInitialized(true)
     }
   }, [db])
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (!isInitialized) return
+
+    const params = new URLSearchParams()
+
+    if (selectedElement.length > 0) {
+      params.set('e', selectedElement.join(','))
+    }
+
+    if (filter.minMeV !== undefined) {
+      params.set('minMeV', filter.minMeV.toString())
+    }
+
+    if (filter.maxMeV !== undefined) {
+      params.set('maxMeV', filter.maxMeV.toString())
+    }
+
+    if (JSON.stringify(filter.neutrinoTypes) !== JSON.stringify(DEFAULT_NEUTRINO_TYPES)) {
+      params.set('neutrino', filter.neutrinoTypes?.join(',') || '')
+    }
+
+    if (filter.limit !== DEFAULT_LIMIT) {
+      params.set('limit', filter.limit?.toString() || DEFAULT_LIMIT.toString())
+    }
+
+    setSearchParams(params, { replace: true })
+  }, [selectedElement, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
 
   // Auto-execute query when filters change
   useEffect(() => {
@@ -59,6 +124,7 @@ export default function FissionQuery() {
       setElements(result.elements)
       setNuclides(result.nuclides)
       setQueryTime(result.executionTime)
+      setTotalCount(result.totalCount)
       setShowResults(true)
     } catch (error) {
       console.error('Query failed:', error)
@@ -195,12 +261,12 @@ export default function FissionQuery() {
                 elements: [],
                 minMeV: undefined,
                 maxMeV: undefined,
-                neutrinoTypes: ['none', 'left', 'right'],
-                limit: 100,
+                neutrinoTypes: DEFAULT_NEUTRINO_TYPES as any[],
+                limit: DEFAULT_LIMIT,
                 orderBy: 'MeV',
                 orderDirection: 'desc'
               })
-              setSelectedElement([])
+              setSelectedElement(DEFAULT_ELEMENT)
             }}
             className="btn btn-secondary px-6 py-2"
           >
@@ -238,10 +304,16 @@ export default function FissionQuery() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Results: {results.length} reactions found
+                  {results.length === totalCount
+                    ? `Showing all ${totalCount.toLocaleString()} matching reactions`
+                    : `Showing ${results.length.toLocaleString()} of ${totalCount.toLocaleString()} matching reactions`
+                  }
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Query executed in {queryTime.toFixed(2)}ms
+                  {results.length < totalCount && (
+                    <span className="ml-2">• Increase limit to see more results</span>
+                  )}
                 </p>
               </div>
               <button
@@ -258,33 +330,46 @@ export default function FissionQuery() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Input</th>
+                    <th colSpan={3} className="bg-blue-50 dark:bg-blue-900/30">Input</th>
+                    <th colSpan={6} className="bg-green-50 dark:bg-green-900/30">Outputs</th>
+                    <th rowSpan={2}>Energy<br/>(MeV)</th>
+                    <th rowSpan={2}>Neutrino</th>
+                  </tr>
+                  <tr>
+                    <th>Element</th>
                     <th>Z</th>
                     <th>A</th>
-                    <th>Output 1</th>
-                    <th>Z1</th>
-                    <th>A1</th>
-                    <th>Output 2</th>
-                    <th>Z2</th>
-                    <th>A2</th>
-                    <th>Energy (MeV)</th>
-                    <th>Neutrino</th>
+                    <th>Element</th>
+                    <th>Z</th>
+                    <th>A</th>
+                    <th>Element</th>
+                    <th>Z</th>
+                    <th>A</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold">{reaction.E}</td>
-                      <td>{reaction.Z}</td>
-                      <td>{reaction.A}</td>
-                      <td className="font-semibold">{reaction.E1}</td>
-                      <td>{reaction.Z1}</td>
-                      <td>{reaction.A1}</td>
-                      <td className="font-semibold">{reaction.E2}</td>
-                      <td>{reaction.Z2}</td>
-                      <td>{reaction.A2}</td>
+                      <td className="font-semibold bg-blue-50 dark:bg-blue-900/30">{reaction.E}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.Z}</td>
+                      <td className="bg-blue-50 dark:bg-blue-900/30">{reaction.A}</td>
+                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E1}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z1}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A1}</td>
+                      <td className="font-semibold bg-green-50 dark:bg-green-900/30">{reaction.E2}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.Z2}</td>
+                      <td className="bg-green-50 dark:bg-green-900/30">{reaction.A2}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
-                      <td>{reaction.neutrino}</td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reaction.neutrino === 'none' ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                          reaction.neutrino === 'left' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                          'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                        }`}>
+                          {reaction.neutrino === 'none' ? 'None' :
+                           reaction.neutrino === 'left' ? 'Left' : 'Right'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
