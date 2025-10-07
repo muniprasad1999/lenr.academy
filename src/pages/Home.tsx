@@ -130,6 +130,31 @@ export default function Home() {
           </p>
         </div>
       </div>
+
+      <div className="card p-6 mt-6 border-2 border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Original Application</h2>
+        <p className="text-gray-700 dark:text-gray-300 mb-3">
+          This is a modern reimplementation of the original Nanosoft Package, which was developed as a
+          PHP web application to explore Dr. Parkhomov's nuclear transmutation tables.
+        </p>
+        <p className="text-gray-700 dark:text-gray-300 mb-4">
+          The original application and comprehensive documentation can be found at:
+        </p>
+        <a
+          href="https://nanosoft.co.nz"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+        >
+          Visit nanosoft.co.nz
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+          We are grateful to R. W. Greenyer and P. W. Power for their pioneering work in making this important research accessible.
+        </p>
+      </div>
     </div>
   )
 }

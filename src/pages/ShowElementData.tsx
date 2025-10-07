@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Loader } from 'lucide-react'
 import { useDatabase } from '../contexts/DatabaseContext'
 import type { Element, Nuclide } from '../types'
 import PeriodicTable from '../components/PeriodicTable'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
 import { getNuclidesByElement } from '../services/queryService'
+import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
 
 export default function ShowElementData() {
-  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [selectedElement, setSelectedElement] = useState<string | null>('H')
   const [isotopes, setIsotopes] = useState<Nuclide[]>([])
   const [selectedNuclide, setSelectedNuclide] = useState<Nuclide | null>(null)
@@ -60,12 +60,7 @@ export default function ShowElementData() {
   }, [db, selectedElement, allElements])
 
   if (dbLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
-      </div>
-    )
+    return <DatabaseLoadingCard downloadProgress={downloadProgress} />
   }
 
   if (dbError) {

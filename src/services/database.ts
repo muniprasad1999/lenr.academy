@@ -1,40 +1,210 @@
 import type { Database, SqlJsStatic } from 'sql.js';
+import {
+  getCachedDB,
+  setCachedDB,
+  clearOldVersions,
+  fetchMetadata,
+  requestPersistentStorage,
+  type CachedDatabase,
+} from './dbCache';
 
 let db: Database | null = null;
+let currentVersion: string | null = null;
+
+export interface DownloadProgress {
+  downloadedBytes: number;
+  totalBytes: number;
+  percentage: number;
+}
+
+export type ProgressCallback = (progress: DownloadProgress) => void;
+
+/**
+ * Download database with progress tracking using streaming fetch
+ */
+async function downloadDatabaseWithProgress(
+  onProgress?: ProgressCallback
+): Promise<Uint8Array> {
+  const response = await fetch('/parkhomov.db');
+  if (!response.ok) {
+    throw new Error(`Failed to load database: ${response.statusText}`);
+  }
+
+  const contentLength = response.headers.get('Content-Length');
+  const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+
+  if (!response.body) {
+    // Fallback if streaming not supported
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let downloadedBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) break;
+
+    chunks.push(value);
+    downloadedBytes += value.length;
+
+    if (onProgress && totalBytes > 0) {
+      onProgress({
+        downloadedBytes,
+        totalBytes,
+        percentage: (downloadedBytes / totalBytes) * 100,
+      });
+    }
+  }
+
+  // Combine chunks into single Uint8Array
+  const combined = new Uint8Array(downloadedBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return combined;
+}
 
 /**
  * Initialize the SQL.js database with Parkhomov tables
+ * Supports caching and background updates
  */
-export async function initDatabase(): Promise<Database> {
+export async function initDatabase(
+  onProgress?: ProgressCallback,
+  onUpdateAvailable?: (version: string) => void
+): Promise<Database> {
   if (db) return db;
 
-  // Dynamic import of sql.js - Vite will handle the CommonJS to ESM conversion
-  const initSqlJs = (await import('sql.js')).default;
+  // Request persistent storage
+  await requestPersistentStorage();
 
-  // Initialize SQL.js - use local WASM file from public directory
+  // Dynamic import of sql.js
+  const initSqlJs = (await import('sql.js')).default;
   const SQL: SqlJsStatic = await initSqlJs({
     locateFile: (file) => `/${file}`,
   });
 
-  // Load pre-built database from public directory
+  // Try to load from cache first
+  let cachedDB: CachedDatabase | null = null;
+  let metadata;
+
   try {
-    console.log('Loading Parkhomov database...');
-    const response = await fetch('/parkhomov.db');
-    if (!response.ok) {
-      throw new Error(`Failed to load database: ${response.statusText}`);
+    // Fetch metadata to check version
+    metadata = await fetchMetadata();
+    console.log(`📡 Server database version: ${metadata.version}`);
+
+    // Check cache
+    cachedDB = await getCachedDB();
+    if (cachedDB) {
+      console.log(`💾 Found cached database version: ${cachedDB.version}`);
+
+      // Load cached database immediately to make app functional
+      db = new SQL.Database(cachedDB.data);
+      currentVersion = cachedDB.version;
+      console.log('✅ Loaded database from cache');
+
+      // Check if update is available
+      if (metadata.version !== cachedDB.version) {
+        console.log(`🔄 Update available: ${cachedDB.version} → ${metadata.version}`);
+        if (onUpdateAvailable) {
+          onUpdateAvailable(metadata.version);
+        }
+        // Background update will be handled by DatabaseContext
+      }
+
+      return db;
     }
-    const buffer = await response.arrayBuffer();
-    db = new SQL.Database(new Uint8Array(buffer));
-    console.log('✅ Parkhomov database loaded successfully');
   } catch (error) {
-    console.error('Failed to load pre-built database, creating new one:', error);
-    // Fallback: create empty database with tables and add ElementsPlus data
+    console.warn('Failed to check cache or metadata:', error);
+  }
+
+  // No cache - download database (first-time user)
+  try {
+    console.log('⬇️ Downloading Parkhomov database...');
+    const data = await downloadDatabaseWithProgress(onProgress);
+
+    // Load into SQL.js
+    db = new SQL.Database(data);
+    console.log('✅ Parkhomov database loaded successfully');
+
+    // Cache for next time
+    if (metadata) {
+      const cached: CachedDatabase = {
+        version: metadata.version,
+        data,
+        size: data.length,
+        downloadedAt: Date.now(),
+        lastModified: metadata.lastModified,
+      };
+      await setCachedDB(cached);
+      currentVersion = metadata.version;
+    }
+
+    return db;
+  } catch (error) {
+    console.error('Failed to load database:', error);
+    // Fallback: create empty database with sample data
     db = new SQL.Database();
     createTables(db);
     populateSampleData(db);
+    return db;
   }
+}
 
-  return db;
+/**
+ * Download and cache a new database version in the background
+ */
+export async function downloadUpdate(
+  targetVersion: string,
+  onProgress?: ProgressCallback
+): Promise<void> {
+  try {
+    console.log(`⬇️ Downloading database update to version ${targetVersion}...`);
+
+    const initSqlJs = (await import('sql.js')).default;
+    const SQL: SqlJsStatic = await initSqlJs({
+      locateFile: (file) => `/${file}`,
+    });
+
+    // Download new version
+    const data = await downloadDatabaseWithProgress(onProgress);
+
+    // Verify it loads correctly
+    const testDB = new SQL.Database(data);
+    testDB.close();
+
+    // Cache the new version
+    const metadata = await fetchMetadata();
+    const cached: CachedDatabase = {
+      version: targetVersion,
+      data,
+      size: data.length,
+      downloadedAt: Date.now(),
+      lastModified: metadata.lastModified,
+    };
+
+    await setCachedDB(cached);
+    console.log(`✅ Database update cached (version ${targetVersion})`);
+
+    // Clean up old versions
+    await clearOldVersions(targetVersion);
+  } catch (error) {
+    console.error('Failed to download update:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get current database version
+ */
+export function getCurrentVersion(): string | null {
+  return currentVersion;
 }
 
 /**

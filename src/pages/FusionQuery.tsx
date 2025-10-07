@@ -7,6 +7,7 @@ import { queryFusion, getAllElements, getElementBySymbol, getNuclideBySymbol } f
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 import ElementDetailsCard from '../components/ElementDetailsCard'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
+import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
 
 // Default values
 const DEFAULT_ELEMENT1 = ['H']
@@ -16,7 +17,7 @@ const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
 const DEFAULT_LIMIT = 100
 
 export default function FusionQuery() {
-  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [searchParams, setSearchParams] = useSearchParams()
   const [elements, setElements] = useState<Element[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -252,14 +253,7 @@ export default function FusionQuery() {
   }
 
   if (dbLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading database...</p>
-        </div>
-      </div>
-    )
+    return <DatabaseLoadingCard downloadProgress={downloadProgress} />
   }
 
   if (dbError) {

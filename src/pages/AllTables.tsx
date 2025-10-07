@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Play, BookOpen, Download, Loader, AlertCircle } from 'lucide-react'
 import { useDatabase } from '../contexts/DatabaseContext'
+import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
 
 export default function AllTables() {
-  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [sqlQuery, setSqlQuery] = useState('SELECT * FROM FusionAll WHERE MeV > 10 ORDER BY MeV DESC LIMIT 100')
   const [results, setResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -62,12 +63,7 @@ export default function AllTables() {
   }
 
   if (dbLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
-      </div>
-    )
+    return <DatabaseLoadingCard downloadProgress={downloadProgress} />
   }
 
   if (dbError) {

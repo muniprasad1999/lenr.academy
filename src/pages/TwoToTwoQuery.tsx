@@ -7,6 +7,7 @@ import { queryTwoToTwo, getAllElements, getElementBySymbol, getNuclideBySymbol }
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 import ElementDetailsCard from '../components/ElementDetailsCard'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
+import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
 
 // Default values
 const DEFAULT_ELEMENT1 = ['H']
@@ -17,7 +18,7 @@ const DEFAULT_NEUTRINO_TYPES = ['none', 'left', 'right']
 const DEFAULT_LIMIT = 100
 
 export default function TwoToTwoQuery() {
-  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [searchParams, setSearchParams] = useSearchParams()
   const [elements, setElements] = useState<Element[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -272,12 +273,7 @@ export default function TwoToTwoQuery() {
   }
 
   if (dbLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading database...</span>
-      </div>
-    )
+    return <DatabaseLoadingCard downloadProgress={downloadProgress} />
   }
 
   if (dbError) {

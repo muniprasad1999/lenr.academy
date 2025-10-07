@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, GitMerge, Scissors, ArrowLeftRight, FlaskConical, Table, TableProperties } from 'lucide-react'
 import { useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
+import DatabaseUpdateBanner from './DatabaseUpdateBanner'
 
 interface LayoutProps {
   children: ReactNode
@@ -176,6 +177,9 @@ export default function Layout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Database Update Banner */}
+      <DatabaseUpdateBanner />
     </div>
   )
 }
