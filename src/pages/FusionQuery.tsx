@@ -1,9 +1,13 @@
-import { useState } from 'react'
-import { Search, Download, Info } from 'lucide-react'
-import type { FusionReaction, QueryFilter } from '../types'
-import { mockFusionReactions, mockElements } from '../services/mockData'
+import { useState, useEffect } from 'react'
+import { Search, Download, Info, Loader2, AlertCircle } from 'lucide-react'
+import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
+import { useDatabase } from '../contexts/DatabaseContext'
+import { queryFusion, getAllElements } from '../services/queryService'
 
 export default function FusionQuery() {
+  const { db, isLoading: dbLoading, error: dbError } = useDatabase()
+  const [elements, setElements] = useState<Element[]>([])
+
   const [filter, setFilter] = useState<QueryFilter>({
     elements: [],
     minMeV: undefined,
@@ -15,29 +19,46 @@ export default function FusionQuery() {
   })
 
   const [results, setResults] = useState<FusionReaction[]>([])
+  const [nuclides, setNuclides] = useState<Nuclide[]>([])
+  const [resultElements, setResultElements] = useState<Element[]>([])
   const [showResults, setShowResults] = useState(false)
   const [selectedElement, setSelectedElement] = useState('')
+  const [isQuerying, setIsQuerying] = useState(false)
+  const [executionTime, setExecutionTime] = useState(0)
+
+  // Load elements when database is ready
+  useEffect(() => {
+    if (db) {
+      const allElements = getAllElements(db)
+      setElements(allElements)
+    }
+  }, [db])
 
   const handleQuery = () => {
-    // Mock query - will be replaced with actual SQL query
-    let filtered = [...mockFusionReactions]
+    if (!db) return
 
-    if (filter.minMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV >= filter.minMeV!)
+    setIsQuerying(true)
+
+    try {
+      // Build filter with selected element
+      const queryFilter: QueryFilter = {
+        ...filter,
+        elements: selectedElement ? [selectedElement] : undefined
+      }
+
+      const result = queryFusion(db, queryFilter)
+
+      setResults(result.reactions)
+      setNuclides(result.nuclides)
+      setResultElements(result.elements)
+      setExecutionTime(result.executionTime)
+      setShowResults(true)
+    } catch (error) {
+      console.error('Query failed:', error)
+      alert(`Query failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsQuerying(false)
     }
-
-    if (filter.maxMeV !== undefined) {
-      filtered = filtered.filter(r => r.MeV <= filter.maxMeV!)
-    }
-
-    if (filter.orderDirection === 'desc') {
-      filtered.sort((a, b) => b.MeV - a.MeV)
-    } else {
-      filtered.sort((a, b) => a.MeV - b.MeV)
-    }
-
-    setResults(filtered.slice(0, filter.limit || 100))
-    setShowResults(true)
   }
 
   const exportToCSV = () => {
@@ -55,8 +76,33 @@ export default function FusionQuery() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'fusion_reactions.csv'
+    a.download = `fusion_reactions_${Date.now()}.csv`
     a.click()
+  }
+
+  if (dbLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading database...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (dbError) {
+    return (
+      <div className="card p-6 bg-red-50">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+          <div>
+            <h3 className="text-lg font-semibold text-red-900 mb-1">Database Error</h3>
+            <p className="text-red-700">{dbError.message}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -82,7 +128,7 @@ export default function FusionQuery() {
               onChange={(e) => setSelectedElement(e.target.value)}
             >
               <option value="">All Elements</option>
-              {mockElements.map(el => (
+              {elements.map(el => (
                 <option key={el.Z} value={el.E}>{el.E} - {el.EName}</option>
               ))}
             </select>
@@ -158,21 +204,34 @@ export default function FusionQuery() {
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleQuery}
+            disabled={isQuerying}
             className="btn btn-primary px-6 py-2"
           >
-            <Search className="w-4 h-4 mr-2 inline" />
-            Execute Query
+            {isQuerying ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
+                Querying...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2 inline" />
+                Execute Query
+              </>
+            )}
           </button>
           <button
-            onClick={() => setFilter({
-              elements: [],
-              minMeV: undefined,
-              maxMeV: undefined,
-              neutrinoTypes: ['none', 'left', 'right'],
-              limit: 100,
-              orderBy: 'MeV',
-              orderDirection: 'desc'
-            })}
+            onClick={() => {
+              setFilter({
+                elements: [],
+                minMeV: undefined,
+                maxMeV: undefined,
+                neutrinoTypes: ['none', 'left', 'right'],
+                limit: 100,
+                orderBy: 'MeV',
+                orderDirection: 'desc'
+              })
+              setSelectedElement('')
+            }}
             className="btn btn-secondary px-6 py-2"
           >
             Reset
@@ -186,8 +245,12 @@ export default function FusionQuery() {
             <span className="text-sm font-medium text-gray-700">SQL Preview:</span>
           </div>
           <code className="text-xs text-gray-600 block font-mono">
-            SELECT * FROM FusionAll WHERE {filter.minMeV ? `MeV >= ${filter.minMeV}` : '1=1'}
-            {filter.maxMeV ? ` AND MeV <= ${filter.maxMeV}` : ''}
+            SELECT * FROM FusionAll
+            {(selectedElement || filter.minMeV !== undefined || filter.maxMeV !== undefined) && ' WHERE '}
+            {selectedElement && `E1 = '${selectedElement}'`}
+            {selectedElement && filter.minMeV !== undefined && ' AND '}
+            {filter.minMeV !== undefined && `MeV >= ${filter.minMeV}`}
+            {filter.maxMeV !== undefined && ` AND MeV <= ${filter.maxMeV}`}
             {` ORDER BY MeV ${filter.orderDirection?.toUpperCase()} LIMIT ${filter.limit || 100}`}
           </code>
         </div>
@@ -199,9 +262,12 @@ export default function FusionQuery() {
           {/* Results Table */}
           <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Results: {results.length} reactions found
-              </h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Results: {results.length} reactions found
+                </h2>
+                <p className="text-sm text-gray-500">Query executed in {executionTime.toFixed(2)}ms</p>
+              </div>
               <button
                 onClick={exportToCSV}
                 className="btn btn-secondary px-4 py-2 text-sm"
@@ -219,6 +285,7 @@ export default function FusionQuery() {
                     <th>Input</th>
                     <th>Z1</th>
                     <th>A1</th>
+                    <th>→</th>
                     <th>Output</th>
                     <th>Z</th>
                     <th>A</th>
@@ -233,14 +300,15 @@ export default function FusionQuery() {
                 <tbody>
                   {results.map((reaction, idx) => (
                     <tr key={idx}>
-                      <td className="font-semibold">{reaction.E1}</td>
+                      <td className="font-semibold text-blue-600">{reaction.E1}</td>
                       <td>{reaction.Z1}</td>
                       <td>{reaction.A1}</td>
-                      <td className="font-semibold">{reaction.E}</td>
+                      <td className="text-center text-gray-400">→</td>
+                      <td className="font-semibold text-green-600">{reaction.E}</td>
                       <td>{reaction.Z}</td>
                       <td>{reaction.A}</td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
-                      <td>{reaction.neutrino}</td>
+                      <td><span className="px-2 py-1 bg-gray-100 rounded text-xs">{reaction.neutrino}</span></td>
                       <td>{reaction.nBorF1}</td>
                       <td>{reaction.aBorF1}</td>
                       <td>{reaction.nBorF}</td>
@@ -254,11 +322,30 @@ export default function FusionQuery() {
 
           {/* Nuclides Summary */}
           <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Nuclides Appearing in Results</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Nuclides Appearing in Results ({nuclides.length})
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {Array.from(new Set(results.flatMap(r => [r.E1, r.E]))).sort().map(el => (
-                <div key={el} className="px-3 py-2 bg-gray-50 rounded text-sm font-medium text-gray-700">
-                  {el}
+              {nuclides.map(nuc => (
+                <div key={nuc.id} className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                  <div className="font-semibold text-sm text-gray-900">{nuc.E}-{nuc.A}</div>
+                  <div className="text-xs text-gray-500">Z={nuc.Z}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Elements Summary */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Elements Appearing in Results ({resultElements.length})
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              {resultElements.map(el => (
+                <div key={el.Z} className="px-3 py-2 bg-blue-50 rounded border border-blue-200">
+                  <div className="font-bold text-lg text-blue-900">{el.E}</div>
+                  <div className="text-xs text-blue-700">{el.EName}</div>
+                  <div className="text-xs text-blue-600">Z={el.Z}</div>
                 </div>
               ))}
             </div>
