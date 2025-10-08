@@ -165,6 +165,44 @@ This is an open science project. Data tables are publicly available from the Mar
 - **Bug Reports**: [Submit an issue](https://github.com/bryanchriswhite/lenr.academy/issues)
 - **Feature Requests**: [Request a feature](https://github.com/bryanchriswhite/lenr.academy/issues/new?labels=enhancement)
 
+## Analytics
+
+This project uses **Umami Analytics** - a privacy-friendly, self-hosted analytics solution that is GDPR compliant and doesn't use cookies.
+
+### Setting Up Umami (One-Time Setup)
+
+1. **Deploy Umami to Railway (Free)**
+   - Visit: https://railway.app/template/umami
+   - Click "Deploy Now"
+   - Sign in with GitHub
+   - Wait for deployment to complete (~2 minutes)
+
+2. **Get Your Analytics Credentials**
+   - Once deployed, Railway will give you a URL (e.g., `https://your-app.railway.app`)
+   - Open the URL and log in (default: admin/umami)
+   - Go to Settings → Websites → Add Website
+   - Enter "lenr.academy" as the domain
+   - Copy the **Website ID** (a UUID string)
+
+3. **Update the Analytics Script**
+   - Open `index.html` in the project
+   - Replace `YOUR-UMAMI-URL` with your Railway URL (e.g., `https://your-app.railway.app`)
+   - Replace `YOUR-WEBSITE-ID` with the Website ID from step 2
+   - Save and deploy
+
+4. **View Your Analytics**
+   - Go to your Umami dashboard: `https://your-app.railway.app`
+   - See real-time visitors, pageviews, referrers, devices, and countries
+
+### What Gets Tracked
+
+- Page views
+- Unique visitors
+- Referral sources
+- Countries and regions
+- Devices and browsers
+- **No personal data**, **no cookies**, fully GDPR compliant
+
 ## Contributing
 
 Contributions welcome! This is an educational tool for exploring LENR theory and data.

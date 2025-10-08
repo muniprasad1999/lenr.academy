@@ -4,6 +4,7 @@ import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, 
 import { useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 import DatabaseUpdateBanner from './DatabaseUpdateBanner'
+import PrivacyBanner from './PrivacyBanner'
 
 interface LayoutProps {
   children: ReactNode
@@ -180,6 +181,9 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Database Update Banner */}
       <DatabaseUpdateBanner />
+
+      {/* Privacy/Analytics Consent Banner */}
+      <PrivacyBanner />
     </div>
   )
 }

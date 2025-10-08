@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LENR Academy - Nanosoft Suite</title>
+
+    <!-- Umami Analytics - Privacy-friendly analytics -->
+    <!-- Only loads if user has accepted analytics -->
+    <script>
+      (function() {
+        var consent = localStorage.getItem('lenr-analytics-consent');
+        if (consent === 'accepted') {
+          var script = document.createElement('script');
+          script.defer = true;
+          script.src = 'https://cloud.umami.is/script.js';
+          script.setAttribute('data-website-id', '916d0566-989b-47e1-9882-b06de40a1c95');
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
