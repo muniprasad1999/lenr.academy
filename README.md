@@ -161,9 +161,9 @@ This is an open science project. Data tables are publicly available from the Mar
 
 ### Repository
 
-- **GitHub**: [bryanchriswhite/lenr.academy](https://github.com/bryanchriswhite/lenr.academy)
-- **Bug Reports**: [Submit an issue](https://github.com/bryanchriswhite/lenr.academy/issues)
-- **Feature Requests**: [Request a feature](https://github.com/bryanchriswhite/lenr.academy/issues/new?labels=enhancement)
+- **GitHub**: [Episk-pos/lenr.academy](https://github.com/Episk-pos/lenr.academy)
+- **Bug Reports**: [Submit an issue](https://github.com/Episk-pos/lenr.academy/issues)
+- **Feature Requests**: [Request a feature](https://github.com/Episk-pos/lenr.academy/issues/new?labels=enhancement)
 
 ## Analytics
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useDatabase } from '../contexts/DatabaseContext'
 import type { Element, Nuclide } from '../types'
 import PeriodicTable from '../components/PeriodicTable'
@@ -8,7 +9,9 @@ import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
 
 export default function ShowElementData() {
   const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
-  const [selectedElement, setSelectedElement] = useState<string | null>('H')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [isotopes, setIsotopes] = useState<Nuclide[]>([])
   const [selectedNuclide, setSelectedNuclide] = useState<Nuclide | null>(null)
 
@@ -44,20 +47,75 @@ export default function ShowElementData() {
 
   const element = allElements.find(el => el.E === selectedElement)
 
-  // Fetch isotopes when element changes
+  // Initialize from URL params on mount
+  useEffect(() => {
+    if (!db || allElements.length === 0) return
+
+    const zParam = searchParams.get('Z')
+    const aParam = searchParams.get('A')
+
+    // Validate atomic number exists
+    const validElement = zParam && allElements.find(el => el.Z === parseInt(zParam))
+
+    if (validElement) {
+      setSelectedElement(validElement.E)
+
+      // If mass number param exists, we'll validate it after isotopes are loaded
+      if (aParam) {
+        const massNumber = parseInt(aParam)
+        if (!isNaN(massNumber)) {
+          // Will be validated in the isotopes effect below
+        }
+      }
+    } else {
+      // Default to H (Z=1) if no valid element in URL
+      setSelectedElement('H')
+      setSearchParams({ Z: '1' }, { replace: true })
+    }
+  }, [db, allElements, searchParams, setSearchParams])
+
+  // Fetch isotopes when element changes and check for isotope in URL
   useEffect(() => {
     if (db && selectedElement) {
       const currentElement = allElements.find(el => el.E === selectedElement)
       if (currentElement) {
         const elementIsotopes = getNuclidesByElement(db, currentElement.Z)
         setIsotopes(elementIsotopes)
-        setSelectedNuclide(null) // Reset nuclide selection when element changes
+
+        // Check if there's an A (mass number) param in URL
+        const aParam = searchParams.get('A')
+        if (aParam) {
+          const massNumber = parseInt(aParam)
+          const validIsotope = elementIsotopes.find(iso => iso.A === massNumber)
+          if (validIsotope) {
+            setSelectedNuclide(validIsotope)
+          } else {
+            setSelectedNuclide(null)
+          }
+        } else {
+          setSelectedNuclide(null) // Reset nuclide selection when element changes
+        }
       }
     } else {
       setIsotopes([])
       setSelectedNuclide(null)
     }
-  }, [db, selectedElement, allElements])
+  }, [db, selectedElement, allElements, searchParams])
+
+  // Handler to update element selection and URL
+  const handleElementClick = (elementSymbol: string) => {
+    const clickedElement = allElements.find(el => el.E === elementSymbol)
+    if (clickedElement) {
+      setSelectedElement(elementSymbol)
+      setSearchParams({ Z: clickedElement.Z.toString() }, { replace: true })
+    }
+  }
+
+  // Handler to update nuclide selection and URL
+  const handleNuclideClick = (nuclide: Nuclide) => {
+    setSelectedNuclide(nuclide)
+    setSearchParams({ Z: nuclide.Z.toString(), A: nuclide.A.toString() }, { replace: true })
+  }
 
   if (dbLoading) {
     return <DatabaseLoadingCard downloadProgress={downloadProgress} />
@@ -82,7 +140,7 @@ export default function ShowElementData() {
       <PeriodicTable
         availableElements={allElements}
         selectedElement={selectedElement}
-        onElementClick={setSelectedElement}
+        onElementClick={handleElementClick}
       />
 
       {element && (
@@ -244,7 +302,7 @@ export default function ShowElementData() {
                   return (
                     <button
                       key={nuclide.id}
-                      onClick={() => setSelectedNuclide(nuclide)}
+                      onClick={() => handleNuclideClick(nuclide)}
                       className={`
                         p-3 rounded-lg border-2 transition-all duration-150
                         ${isSelected

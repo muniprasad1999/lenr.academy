@@ -164,7 +164,7 @@ export default function Home() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <a
-            href="https://github.com/bryanchriswhite/lenr.academy"
+            href="https://github.com/Episk-pos/lenr.academy"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors font-medium"
@@ -175,7 +175,7 @@ export default function Home() {
             View on GitHub
           </a>
           <a
-            href="https://github.com/bryanchriswhite/lenr.academy/issues"
+            href="https://github.com/Episk-pos/lenr.academy/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
@@ -183,7 +183,7 @@ export default function Home() {
             Report Issue
           </a>
           <a
-            href="https://github.com/bryanchriswhite/lenr.academy/issues/new?labels=enhancement"
+            href="https://github.com/Episk-pos/lenr.academy/issues/new?labels=enhancement"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
