@@ -4,11 +4,6 @@ on:
   release:
     types: [published, edited, released]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to deploy'
-        required: true
-        type: string
 
 jobs:
   deploy:
@@ -18,12 +13,15 @@ jobs:
     # Deploy only for non-prerelease releases or manual workflow dispatch
     if: github.event.release.prerelease == false || github.event_name == 'workflow_dispatch'
 
+    permissions:
+      contents: write  # Needed to upload release assets
+
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,13 +39,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
-          if [ -n "$TAG" ]; then
+          # For release events, use the release tag. For manual dispatch, use the ref name.
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+
+          # Check if a release exists for this tag
+          if gh release view "$TAG" &>/dev/null; then
+            echo "Uploading database to release $TAG..."
             gh release upload "$TAG" \
               public/parkhomov.db \
               --clobber
           else
-            echo "Warning: No release tag specified, skipping database upload"
+            echo "⚠️  No release found for tag $TAG, skipping database upload"
+            echo "The database can be uploaded later using: npm run release:upload-db"
           fi
 
       - name: Configure AWS credentials
@@ -65,7 +72,12 @@ jobs:
 
       - name: Add deployment summary
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+
           echo "## Deployment Successful :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Release:** $TAG" >> $GITHUB_STEP_SUMMARY
