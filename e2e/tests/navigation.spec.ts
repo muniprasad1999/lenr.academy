@@ -23,7 +23,8 @@ test.describe('Navigation and Routing', () => {
       { path: '/element-data', name: 'Element Data', heading: /Element Data/i },
       { path: '/tables', name: 'Tables in Detail', heading: /Tables in Detail/i },
       { path: '/all-tables', name: 'All Tables', heading: /All Tables/i },
-      { path: '/cascades', name: 'Cascades', heading: /Cascade Simulations/i }
+      { path: '/cascades', name: 'Cascades', heading: /Cascade Simulations/i },
+      { path: '/privacy', name: 'Privacy', heading: /Privacy Settings/i }
     ];
 
     for (const route of routes) {

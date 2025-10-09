@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, GitMerge, Scissors, ArrowLeftRight, FlaskConical, Table, TableProperties } from 'lucide-react'
+import { Menu, X, Atom, Moon, Sun, ChevronLeft, ChevronRight, Home as HomeIcon, GitMerge, Scissors, ArrowLeftRight, FlaskConical, Table, TableProperties, Shield } from 'lucide-react'
 import { useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 import DatabaseUpdateBanner from './DatabaseUpdateBanner'
@@ -76,6 +76,16 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
           </nav>
+          <div className="p-4 border-t dark:border-gray-700">
+            <Link
+              to="/privacy"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Privacy Settings</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -127,7 +137,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className={`p-4 border-t ${desktopSidebarCollapsed ? 'flex flex-col items-center' : ''}`}>
             <button
               onClick={toggleTheme}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors mb-3 ${desktopSidebarCollapsed ? 'justify-center' : 'w-full justify-center'}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors mb-2 ${desktopSidebarCollapsed ? 'justify-center' : 'w-full justify-center'}`}
               title={desktopSidebarCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
             >
               {theme === 'dark' ? (
@@ -142,6 +152,14 @@ export default function Layout({ children }: LayoutProps) {
                 </>
               )}
             </button>
+            <Link
+              to="/privacy"
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors mb-3 ${desktopSidebarCollapsed ? 'justify-center' : 'w-full justify-center'}`}
+              title={desktopSidebarCollapsed ? 'Privacy Settings' : undefined}
+            >
+              <Shield className="w-4 h-4" />
+              {!desktopSidebarCollapsed && <span>Privacy Settings</span>}
+            </Link>
             {!desktopSidebarCollapsed && (
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 <p>Based on work by Dr. Alexander Parkhomov</p>

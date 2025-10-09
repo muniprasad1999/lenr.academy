@@ -10,6 +10,7 @@ import ShowElementData from './pages/ShowElementData'
 import TablesInDetail from './pages/TablesInDetail'
 import AllTables from './pages/AllTables'
 import CascadesAll from './pages/CascadesAll'
+import PrivacyPreferences from './pages/PrivacyPreferences'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
               <Route path="/tables" element={<TablesInDetail />} />
               <Route path="/all-tables" element={<AllTables />} />
               <Route path="/cascades" element={<CascadesAll />} />
+              <Route path="/privacy" element={<PrivacyPreferences />} />
             </Routes>
           </Layout>
         </Router>
