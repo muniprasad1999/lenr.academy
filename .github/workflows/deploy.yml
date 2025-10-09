@@ -4,6 +4,11 @@ on:
   release:
     types: [published, edited, released]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to deploy'
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -18,7 +23,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,9 +41,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} \
-            public/parkhomov.db \
-            --clobber
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          if [ -n "$TAG" ]; then
+            gh release upload "$TAG" \
+              public/parkhomov.db \
+              --clobber
+          else
+            echo "Warning: No release tag specified, skipping database upload"
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -55,9 +65,10 @@ jobs:
 
       - name: Add deployment summary
         run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
           echo "## Deployment Successful :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** $TAG" >> $GITHUB_STEP_SUMMARY
           echo "**Site:** https://lenr.academy" >> $GITHUB_STEP_SUMMARY
           echo "**Database:** Uploaded to release assets (154MB)" >> $GITHUB_STEP_SUMMARY
           echo "**Deployed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
