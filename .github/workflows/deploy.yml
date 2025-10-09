@@ -13,7 +13,7 @@ jobs:
     # and either newly published or changed from pre-release → non-pre-release
     if: >
       (github.event.action == 'published' && github.event.release.prerelease == false) ||
-      (github.event.action == 'edited' && github.event.release.prerelease == false && github.event.release.draft == false)
+      (github.event.action == 'edited' && github.event.release.prerelease == false)
 
 
     steps:
