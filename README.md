@@ -8,6 +8,8 @@ A modern web application for exploring Low Energy Nuclear Reactions (LENR) and c
 
 **💬 Community**: [GitHub Discussions](https://github.com/Episk-pos/lenr.academy/discussions)
 
+**📊 Analytics Dashboard**: [Public Usage Statistics](https://cloud.umami.is/share/JGkYeKU60K9D1t4U)
+
 ## About
 
 This application provides interactive tools for querying and analyzing nuclear reaction databases originally compiled by Dr. Alexander Parkhomov. The Parkhomov tables contain:
