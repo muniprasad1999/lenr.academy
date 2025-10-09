@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LENR Academy is a React/TypeScript SPA that provides interactive tools for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways. It's a modern reimplementation of the original [Nanosoft Package](https://nanosoft.co.nz) PHP application developed by R.W. Greenyer and P.W. Power.
 
-The application operates entirely client-side using a 207MB SQLite database (parkhomov.db) containing Dr. Alexander Parkhomov's nuclear reaction tables:
+The application operates entirely client-side using a 154MB SQLite database (parkhomov.db) containing Dr. Alexander Parkhomov's nuclear reaction tables:
 - 1,389 fusion reactions
 - 817 fission reactions
 - 516,789 two-to-two reactions
@@ -56,7 +56,7 @@ npm run deploy:cache # Invalidate CloudFront distribution
 
 The application uses **sql.js** (SQLite compiled to WebAssembly) to run queries entirely in the browser. The database lifecycle:
 
-1. **First Load**: Downloads parkhomov.db (207MB) from `/public/parkhomov.db` with streaming fetch and progress tracking
+1. **First Load**: Downloads parkhomov.db (154MB) from `/public/parkhomov.db` with streaming fetch and progress tracking
 2. **Caching**: Stores database in IndexedDB via `dbCache.ts` with version metadata
 3. **Subsequent Loads**: Loads from IndexedDB cache instantly
 4. **Updates**: Checks `/parkhomov.db.meta.json` for version changes and shows update banner when available
@@ -64,9 +64,9 @@ The application uses **sql.js** (SQLite compiled to WebAssembly) to run queries 
 **Key tables**:
 - `NuclidesPlus` - Nuclide properties (Z, A, binding energy, half-life, boson/fermion flags)
 - `ElementPropertiesPlus` - Element properties (melting point, density, electronegativity, etc.)
-- `FusionReactions` - A + B → C reactions
-- `FissionReactions` - A → B + C reactions
-- `TwoToTwoReactions` - A + B → C + D reactions
+- `FusionAll` - A + B → C reactions (includes neutrino-involved reactions)
+- `FissionAll` - A → B + C reactions (includes neutrino-involved reactions)
+- `TwoToTwoAll` - A + B → C + D reactions (includes neutrino-involved reactions)
 
 ### URL State Management
 
@@ -80,7 +80,7 @@ Browser back/forward navigation works naturally. Parameters are validated agains
 
 - **Umami Analytics**: Privacy-friendly, GDPR-compliant analytics loaded conditionally from `index.html`
 - **PrivacyBanner**: First-visit consent banner with opt-out using localStorage key `lenr-analytics-consent`
-- **Metered Connection Detection**: Uses Network Information API to warn before 207MB download on cellular connections (localStorage key: `lenr-metered-download-consent`)
+- **Metered Connection Detection**: Uses Network Information API to warn before 154MB download on cellular connections (localStorage key: `lenr-metered-download-consent`)
 
 ### Styling System
 
@@ -202,11 +202,11 @@ src/
 └── main.tsx          # React entry point
 
 public/
-├── parkhomov.db           # SQLite database (207MB, gitignored)
+├── parkhomov.db           # SQLite database (154MB, gitignored)
 ├── parkhomov.db.meta.json # Version metadata for update detection
 └── sql-wasm.wasm          # sql.js WebAssembly binary
 ```
 
 ## Git Workflow
 
-The `.gitignore` excludes `*.db` files but keeps `!*.db.meta.json` for version tracking. The 207MB database file is served from S3 in production and must be manually placed in `/public` for local development.
+The `.gitignore` excludes `*.db` files but keeps `!*.db.meta.json` for version tracking. The 154MB database file is served from S3 in production and must be manually placed in `/public` for local development.

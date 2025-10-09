@@ -52,7 +52,7 @@ function isMeteredConnection(): boolean {
 }
 
 const METERED_WARNING_KEY = 'lenr-metered-download-consent';
-const DATABASE_SIZE_MB = 207; // Size of parkhomov.db
+const DATABASE_SIZE_MB = 154; // Size of parkhomov.db
 
 export interface DatabaseContextType {
   db: Database | null;

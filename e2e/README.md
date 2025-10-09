@@ -224,7 +224,7 @@ npx playwright test --trace on
 ### Common Issues
 
 #### Database timeout
-- **Cause**: 207MB database download takes too long
+- **Cause**: 154MB database download takes too long
 - **Solution**: Tests allow up to 60 seconds; adjust timeout if needed
 
 #### Metered warning not dismissing
@@ -243,7 +243,7 @@ npx playwright test --trace on
 
 ### Test Execution Time
 
-- **Database loading**: ~30-60s on first run (download 207MB)
+- **Database loading**: ~30-60s on first run (download 154MB)
 - **Cached database**: ~2-5s (from IndexedDB)
 - **Query tests**: ~5-15s per test
 - **Full suite**: ~10-15 minutes (all browsers)
@@ -257,7 +257,7 @@ npx playwright test --trace on
 
 ## Database Considerations
 
-The application uses a 207MB SQLite database. In CI:
+The application uses a 154MB SQLite database. In CI:
 
 1. **First test**: Downloads database from `/public/parkhomov.db`
 2. **Subsequent tests**: Load from IndexedDB cache

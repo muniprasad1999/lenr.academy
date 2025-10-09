@@ -12,9 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Database files (large binary files)
-*.db
-# But keep the metadata file
+# Database metadata (keep this)
 !*.db.meta.json
 
 # Editor directories and files

@@ -1,5 +1,6 @@
 {
-  "version": "1.0.0",
-  "size": 216727552,
-  "lastModified": "2025-01-07T16:06:00Z"
+  "version": "1.2.0",
+  "size": 161054720,
+  "lastModified": "2025-10-09T00:00:00Z",
+  "changelog": "Removed redundant tables: Fusion, Fission, TwoToTwo (non-All versions) and ElementProperties, Nuclides (non-Plus versions) - reduced size from 207MB to 154MB"
 }
