@@ -1,12 +1,12 @@
 # LENR Academy - Nanosoft Suite
 
-[![E2E Tests (Main Branch)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml/badge.svg)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml)
+[![E2E Tests](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml/badge.svg)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml)
 
-A modern React SPA reimplementation of the [Nanosoft Package](https://nanosoft.co.nz) for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways. This is a complete rebuild in React/TypeScript of the original PHP web application developed by R.W. Greenyer and P.W. Power.
+A modern web application for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways. Built on Dr. Alexander Parkhomov's nuclear reaction databases, this tool provides interactive queries and analysis of thermodynamically favorable nuclear transmutations.
 
 **🌐 Live Application**: [lenr.academy](https://lenr.academy)
 
-**💬 Community**: [GitHub Discussions](https://github.com/Episk-pos/lenr.academy/discussions) - Ask questions, share ideas, and discuss LENR research
+**💬 Community**: [GitHub Discussions](https://github.com/Episk-pos/lenr.academy/discussions)
 
 ## About
 
@@ -70,80 +70,31 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 
 > 📸 **Screenshots are auto-generated** using Playwright. To regenerate: `npm run screenshots`
 
-## Technology Stack
+## Data Sources
 
-- **React 18** + **TypeScript** - Modern UI framework with strict typing
-- **Vite** - Fast build tool and dev server
-- **TailwindCSS** - Utility-first styling with dark mode support
-- **React Router** - Client-side routing
-- **sql.js** - Client-side SQLite database (WebAssembly)
-- **IndexedDB** - Browser database caching for offline access
-- **Lucide React** - Icon library
-- **Context API** - State management (Database, Theme)
+Based on the groundbreaking work of:
+- **Dr. Alexander Parkhomov** - Original Parkhomov tables (2018)
+- **Martin Fleischmann Memorial Project** - Data compilation and research
+- **R.W. Greenyer and P.W. Power** - Original [Nanosoft Package](https://nanosoft.co.nz) (PHP application)
 
-## Getting Started
+## Credits & Attribution
 
-### Prerequisites
-- Node.js 18+ or Node.js 20+
-- npm or yarn
+This is a modern reimplementation of the original **Nanosoft Package** PHP web application developed by **R.W. Greenyer** and **P.W. Power**. We are grateful for their pioneering work in making LENR research accessible to the scientific community.
 
-### Installation
+**Original Application**: [nanosoft.co.nz](https://nanosoft.co.nz)
 
-```bash
-# Install dependencies
-npm install
+## For Developers
 
-# Start development server
-npm run dev
+Interested in contributing or running locally?
 
-# Build for production
-npm run build
+- 📖 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute, setup instructions, development workflow
+- 🛠️ **[Developer Documentation](docs/DEVELOPMENT.md)** - Architecture, technology stack, deployment guides
+- 💬 **[GitHub Discussions](https://github.com/Episk-pos/lenr.academy/discussions)** - Ask questions and share ideas
+- 
+## Initial Development Roadmap
 
-# Preview production build
-npm run preview
-```
+### Phase 1-4 Complete ✅
 
-The application will be available at `http://localhost:5173`
-
-## Project Structure
-
-```
-src/
-├── components/           # Reusable UI components
-│   ├── Layout.tsx       # Main app layout with sidebar
-│   ├── PeriodicTable.tsx            # Standalone periodic table
-│   ├── PeriodicTableSelector.tsx    # Multi-select periodic table
-│   ├── ElementDetailsCard.tsx       # Element properties display
-│   ├── NuclideDetailsCard.tsx       # Nuclide/isotope details
-│   ├── DatabaseLoadingCard.tsx      # Download progress UI
-│   └── DatabaseUpdateBanner.tsx     # Version update notifications
-├── pages/               # Route pages
-│   ├── Home.tsx
-│   ├── FusionQuery.tsx
-│   ├── FissionQuery.tsx
-│   ├── TwoToTwoQuery.tsx
-│   ├── ShowElementData.tsx
-│   ├── TablesInDetail.tsx
-│   ├── AllTables.tsx
-│   └── CascadesAll.tsx
-├── services/            # Data layer
-│   ├── database.ts      # Database initialization with streaming download
-│   ├── dbCache.ts       # IndexedDB caching and version management
-│   ├── queryService.ts  # SQL query execution engine
-│   └── mockData.ts      # Sample data for development
-├── contexts/            # React contexts
-│   ├── DatabaseContext.tsx  # Global database state
-│   └── ThemeContext.tsx     # Theme (dark/light) management
-├── types/               # TypeScript type definitions
-│   └── index.ts
-├── App.tsx              # Main app component with routing
-├── main.tsx             # Application entry point
-└── index.css            # Global styles with theme support
-```
-
-## Current Status
-
-**Phase 1-4 Complete** ✅:
 - ✅ Project setup with Vite + React + TypeScript + TailwindCSS
 - ✅ Core TypeScript interfaces and data models
 - ✅ Responsive layout with sidebar navigation and dark mode
@@ -163,76 +114,46 @@ src/
 - ✅ CSV export functionality
 - ✅ **Deployed to production** at [lenr.academy](https://lenr.academy)
 
-**Next Steps**:
-- [ ] Add data visualization components (charts, graphs)
-- [ ] Implement cascade simulation logic
-- [ ] Add query history and saved queries
-- [ ] Performance optimization with web workers
-- [ ] Enhanced PWA support with service workers
+### Phase 5: Next Steps
 
-## Data Sources
+- [ ] **Data Visualization**
+  - Energy distribution charts (histogram/density plots)
+  - Reaction network diagrams (force-directed graphs)
+  - Isotope chart (Segré chart visualization)
+  - 3D periodic table visualization
 
-Based on the groundbreaking work of:
-- **Dr. Alexander Parkhomov** - Original Parkhomov tables (2018)
-- **Martin Fleischmann Memorial Project** - Data compilation and research
-- **R.W. Greenyer and P.W. Power** - Original [Nanosoft Package](https://nanosoft.co.nz) (PHP application)
+- [ ] **Cascade Simulations**
+  - Implement cascade algorithm (iterative reaction chains)
+  - Visualize reaction pathways and products
+  - Probabilistic branching support
+  - Export cascade results
 
-## Credits & Attribution
+- [ ] **Query History & Bookmarks**
+  - Save frequently used queries
+  - Query history with timestamps
+  - Share queries via URL parameters
+  - Export/import query sets
 
-This is a modern React/TypeScript reimplementation of the original Nanosoft Package PHP web application. We are grateful to **R.W. Greenyer** and **P.W. Power** for their pioneering work in making this important LENR research accessible to the scientific community.
+- [ ] **Performance Optimizations**
+  - Web Workers for heavy computations
+  - Virtual scrolling for large result sets
+  - Lazy loading of isotope data
+  - Query result caching
 
-**Original Application**: [nanosoft.co.nz](https://nanosoft.co.nz)
+- [ ] **PWA Features**
+  - Service worker for true offline support
+  - App manifest for installability
+  - Background sync for database updates
+  - Push notifications for new data
 
-The original PHP application and comprehensive documentation remain available at the link above. This React version aims to provide enhanced interactivity, modern web features (offline caching, responsive design, dark mode), and improved user experience while preserving the scientific integrity of the original work.
+- [ ] **Educational Content**
+  - Interactive tutorials
+  - Glossary of nuclear physics terms
+  - Video explanations
+  - Example queries and use cases
 
 ## License
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** - see the [LICENSE.md](LICENSE.md) file for details.
 
-This is an open science project. Data tables are publicly available from the Martin Fleischmann Memorial Project.
-
-### Repository
-
-- **GitHub**: [Episk-pos/lenr.academy](https://github.com/Episk-pos/lenr.academy)
-- **Discussions**: [Join the conversation](https://github.com/Episk-pos/lenr.academy/discussions)
-- **Bug Reports**: [Submit an issue](https://github.com/Episk-pos/lenr.academy/issues)
-- **Feature Requests**: [Request a feature](https://github.com/Episk-pos/lenr.academy/issues/new?labels=enhancement)
-
-## Analytics
-
-This project uses **Umami Analytics** - a privacy-friendly analytics solution that is GDPR compliant and doesn't use cookies.
-
-### Setting Up Umami Cloud (Recommended)
-
-1. **Create a Free Umami Cloud Account**
-   - Visit: https://cloud.umami.is
-   - Sign up for a free account (includes 100k events/month)
-
-2. **Add Your Website**
-   - Go to Settings → Websites → Add Website
-   - Enter your domain (e.g., "lenr.academy")
-   - Copy the **Website ID** (a UUID string)
-   - Copy the tracking script URL (e.g., `https://cloud.umami.is/script.js`)
-
-3. **Update the Analytics Script**
-   - Open `index.html` in the project
-   - Replace `YOUR-UMAMI-URL` with `https://cloud.umami.is`
-   - Replace `YOUR-WEBSITE-ID` with the Website ID from step 2
-   - Save and deploy
-
-4. **View Your Analytics**
-   - Go to your Umami Cloud dashboard: https://cloud.umami.is
-   - See real-time visitors, pageviews, referrers, devices, and countries
-
-### What Gets Tracked
-
-- Page views
-- Unique visitors
-- Referral sources
-- Countries and regions
-- Devices and browsers
-- **No personal data**, **no cookies**, fully GDPR compliant
-
-## Contributing
-
-Contributions welcome! This is an educational tool for exploring LENR theory and data.
+This is an open science project. All data and code are publicly available to advance LENR research.
