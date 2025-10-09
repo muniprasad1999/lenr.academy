@@ -1,5 +1,7 @@
 # LENR Academy - Nanosoft Suite
 
+[![E2E Tests (Main Branch)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml/badge.svg)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml)
+
 A modern React SPA reimplementation of the [Nanosoft Package](https://nanosoft.co.nz) for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways. This is a complete rebuild in React/TypeScript of the original PHP web application developed by R.W. Greenyer and P.W. Power.
 
 **🌐 Live Application**: [lenr.academy](https://lenr.academy)
@@ -39,6 +41,34 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 - **Element vs Nuclide Views**: Context-aware detail cards on query pages
 - **Multi-element Selection**: Query multiple elements simultaneously
 - **CSV Export**: Export query results to spreadsheets
+
+## Screenshots
+
+### Desktop Views
+
+<img src="docs/screenshots/desktop/home-light.png" alt="Home page with feature overview" width="600"/>
+
+*Home page with feature overview*
+
+<img src="docs/screenshots/desktop/fusion-query-light.png" alt="Fusion Reactions query interface" width="600"/>
+
+*Fusion Reactions query interface*
+
+<img src="docs/screenshots/desktop/element-data-light.png" alt="Show Element Data with interactive periodic table" width="600"/>
+
+*Show Element Data with interactive periodic table*
+
+### Mobile Views
+
+<p>
+  <img src="docs/screenshots/mobile/sidebar-open-light.png" alt="Mobile navigation sidebar" width="250"/>
+  <img src="docs/screenshots/mobile/fusion-query-light.png" alt="Fusion Reactions query interface" width="250"/>
+  <img src="docs/screenshots/mobile/element-data-light.png" alt="Show Element Data page" width="250"/>
+</p>
+
+*Mobile views: Navigation sidebar, Fusion Reactions query, and Show Element Data*
+
+> 📸 **Screenshots are auto-generated** using Playwright. To regenerate: `npm run screenshots`
 
 ## Technology Stack
 
