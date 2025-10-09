@@ -2,15 +2,19 @@ name: Deploy to Production
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
   deploy:
     name: Deploy to AWS S3 + CloudFront
     runs-on: ubuntu-latest
 
-    # Only deploy non-prerelease releases
-    if: github.event.release.prerelease == false
+    # Run only if the release is non-pre-release,
+    # and either newly published or changed from pre-release → non-pre-release
+    if: >
+      (github.event.action == 'published' && github.event.release.prerelease == false) ||
+      (github.event.action == 'edited' && github.event.release.prerelease == false && github.event.release.draft == false)
+
 
     steps:
       - name: Checkout code
