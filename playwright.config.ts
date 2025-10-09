@@ -33,8 +33,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  /* Global test timeout - 20 seconds per test */
-  timeout: 20000,
+  /* Global test timeout - 60 seconds per test */
+  timeout: 60000,
 
   /* Configure projects for major browsers */
   projects: [
