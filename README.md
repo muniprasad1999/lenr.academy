@@ -44,6 +44,7 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 - **Element vs Nuclide Views**: Context-aware detail cards on query pages
 - **Multi-element Selection**: Query multiple elements simultaneously
 - **CSV Export**: Export query results to spreadsheets
+- **Error Tracking**: Privacy-focused error monitoring with Sentry (GDPR-compliant, EU hosting)
 
 ## Screenshots
 
@@ -126,6 +127,7 @@ Interested in contributing or running locally?
 - ✅ Advanced filtering (multi-element, energy ranges, neutrino types)
 - ✅ Dynamic SQL preview and query execution timing
 - ✅ CSV export functionality
+- ✅ **Privacy-focused error tracking** with Sentry (GDPR-compliant, EU hosting)
 - ✅ **Deployed to production** at [lenr.academy](https://lenr.academy)
 
 ### Phase 5: Next Steps

@@ -67,6 +67,12 @@ graph TB
 | **sql.js** | 1.11+ | SQLite compiled to WebAssembly |
 | **IndexedDB** | Native | Browser database caching |
 
+### Error Tracking & Monitoring
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Sentry** | 10.19+ | Privacy-focused error tracking (GDPR-compliant, EU hosting) |
+
 ### Development Tools
 
 | Tool | Purpose |
@@ -381,6 +387,32 @@ The application uses **Umami Analytics** (privacy-friendly, GDPR-compliant).
 - No personal data collection
 - GDPR compliant
 - User can opt out via PrivacyBanner
+
+### Error Tracking Setup (Sentry)
+
+The application uses **Sentry** for privacy-focused error monitoring.
+
+#### Setup Steps
+
+See detailed setup guide in **[docs/SENTRY_SETUP.md](SENTRY_SETUP.md)** for complete instructions.
+
+**Quick Summary**:
+1. Create Sentry account (EU region)
+2. Create React project
+3. Add GitHub secrets:
+   - `VITE_SENTRY_DSN`
+   - `SENTRY_ORG`
+   - `SENTRY_PROJECT`
+   - `SENTRY_AUTH_TOKEN`
+
+**Privacy Features**:
+- No PII sent (`sendDefaultPii: false`)
+- URL scrubbing (only safe query params kept)
+- EU data hosting (GDPR-compliant)
+- Source maps uploaded but not included in bundle
+- Development mode disabled (console logging only)
+
+**Developer Guidelines**: See **[.claude/sentry-guidelines.md](../.claude/sentry-guidelines.md)** for coding patterns and best practices.
 
 ### Continuous Integration (GitHub Actions)
 

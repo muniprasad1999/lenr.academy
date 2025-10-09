@@ -30,6 +30,7 @@
     "release:upload-db": "gh release upload $(git describe --tags --abbrev=0) public/parkhomov.db --clobber"
   },
   "dependencies": {
+    "@sentry/react": "^10.19.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.292.0",
     "react": "^18.2.0",
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.56.0",
+    "@sentry/vite-plugin": "^4.3.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/sql.js": "^1.4.9",
