@@ -205,7 +205,22 @@ Pre-releases are marked with:
 
 ### Release Assets
 
-To add release assets (e.g., built bundles):
+#### Parkhomov Database (Automatic)
+
+For **non-prerelease** versions, the `parkhomov.db` file (154MB) is automatically uploaded to the GitHub Release during deployment via the `deploy.yml` workflow. This happens after the build step and before AWS deployment.
+
+#### Manual Database Upload
+
+If you need to upload the database manually to any release:
+```bash
+npm run release:upload-db
+```
+
+This will upload `public/parkhomov.db` to the latest git tag.
+
+#### Other Assets
+
+To add other release assets (e.g., built bundles):
 ```bash
 # After creating release
 gh release upload v0.0.2 ./dist/bundle.zip

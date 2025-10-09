@@ -1,7 +1,6 @@
 # LENR Academy - Nanosoft Suite
 
 [![E2E Tests](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml/badge.svg)](https://github.com/Episk-pos/lenr.academy/actions/workflows/e2e-main.yml)
-[![Deploy to Production](https://github.com/Episk-pos/lenr.academy/actions/workflows/deploy.yml/badge.svg)](https://github.com/Episk-pos/lenr.academy/actions/workflows/deploy.yml)
 
 A modern web application for exploring Low Energy Nuclear Reactions (LENR) and cold fusion transmutation pathways. Built on Dr. Alexander Parkhomov's nuclear reaction databases, this tool provides interactive queries and analysis of thermodynamically favorable nuclear transmutations.
 
@@ -13,7 +12,7 @@ A modern web application for exploring Low Energy Nuclear Reactions (LENR) and c
 
 ## About
 
-This application provides interactive tools for querying and analyzing nuclear reaction databases originally compiled by Dr. Alexander Parkhomov. The Parkhomov tables contain:
+This application provides interactive tools for querying and analyzing a SQLite nuclear reaction database originally compiled by Dr. Alexander Parkhomov. The Parkhomov tables contain:
 
 - **1,389 fusion reactions** - combining lighter nuclei
 - **817 fission reactions** - splitting heavier nuclei
@@ -36,7 +35,7 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 
 ### Advanced Features
 - **Dark/Light Theme**: Toggle between themes with system preference detection
-- **Offline Database Caching**: IndexedDB caching for faster load times and offline access
+- **Offline SQLite Database Caching**: IndexedDB caching for faster load times and offline access
 - **Download Progress**: Real-time progress indicators during database loading
 - **Automatic Updates**: Version checking and update notifications
 - **Interactive Periodic Table**: Click-to-select elements with visual feedback
@@ -73,6 +72,17 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 
 > 📸 **Screenshots are auto-generated** using Playwright. To regenerate: `npm run screenshots`
 
+## Database
+
+The application uses a **154MB SQLite database** (`parkhomov.db`) containing all nuclear reaction data. The database is:
+
+- **Format**: SQLite 3.x
+- **Size**: 154 MB (uncompressed)
+- **Tables**: NuclidesPlus, ElementPropertiesPlus, FusionReactions, FissionReactions, TwoToTwoReactions
+- **Download**: Available in [GitHub release assets](https://github.com/Episk-pos/lenr.academy/releases/latest) for offline use or external analysis
+
+The database runs entirely client-side in your browser using [sql.js](https://sql.js.org/) (SQLite compiled to WebAssembly). It's automatically cached in IndexedDB for faster subsequent loads.
+
 ## Data Sources
 
 Based on the groundbreaking work of:
@@ -93,7 +103,7 @@ Interested in contributing or running locally?
 - 📖 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute, setup instructions, development workflow
 - 🛠️ **[Developer Documentation](docs/DEVELOPMENT.md)** - Architecture, technology stack, deployment guides
 - 💬 **[GitHub Discussions](https://github.com/Episk-pos/lenr.academy/discussions)** - Ask questions and share ideas
-- 
+
 ## Initial Development Roadmap
 
 ### Phase 1-4 Complete ✅
