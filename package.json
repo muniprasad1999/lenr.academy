@@ -13,7 +13,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:report": "playwright show-report",
-    "deploy": "yarn deploy:s3 && yarn deploy:cache",
+    "deploy": "npm run deploy:s3 && npm run deploy:cache",
     "deploy:s3": "aws s3 sync ./dist s3://lenr.academy",
     "deploy:cache": "aws cloudfront create-invalidation --distribution-id ET0385Q49O8YX --paths /index.html"
   },
