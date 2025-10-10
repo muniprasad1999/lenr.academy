@@ -5,8 +5,10 @@ import App from './App.tsx'
 import './index.css'
 
 // Initialize Sentry for error tracking
-// Only initialize if DSN is provided (production environment)
-if (import.meta.env.VITE_SENTRY_DSN) {
+// Only initialize if DSN is provided (production environment) AND user hasn't explicitly declined
+const errorReportingConsent = localStorage.getItem('lenr-error-reporting-consent')
+// Default to enabled unless user explicitly declined
+if (import.meta.env.VITE_SENTRY_DSN && errorReportingConsent !== 'declined') {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.MODE, // 'development' or 'production'

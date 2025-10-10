@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
-import { Shield, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { Shield, CheckCircle, XCircle, RefreshCw, Bug } from 'lucide-react'
 
 const ANALYTICS_CONSENT_KEY = 'lenr-analytics-consent'
+const ERROR_REPORTING_CONSENT_KEY = 'lenr-error-reporting-consent'
 
 export default function PrivacyPreferences() {
   const [consent, setConsent] = useState<string | null>(null)
+  const [errorReportingConsent, setErrorReportingConsent] = useState<string | null>(null)
   const [hasChanged, setHasChanged] = useState(false)
+  const [errorReportingChanged, setErrorReportingChanged] = useState(false)
   const [showReloadMessage, setShowReloadMessage] = useState(false)
 
   useEffect(() => {
-    // Load current consent state
+    // Load current consent states
     const current = localStorage.getItem(ANALYTICS_CONSENT_KEY)
+    const errorCurrent = localStorage.getItem(ERROR_REPORTING_CONSENT_KEY)
     setConsent(current)
+    setErrorReportingConsent(errorCurrent)
   }, [])
 
   const handleConsentChange = (newConsent: 'accepted' | 'declined') => {
@@ -28,12 +33,22 @@ export default function PrivacyPreferences() {
     }
   }
 
+  const handleErrorReportingChange = (newConsent: 'accepted' | 'declined') => {
+    localStorage.setItem(ERROR_REPORTING_CONSENT_KEY, newConsent)
+    setErrorReportingConsent(newConsent)
+    setErrorReportingChanged(true)
+    // Error reporting changes require page reload
+    setShowReloadMessage(true)
+  }
+
   const handleReload = () => {
     window.location.reload()
   }
 
   const isEnabled = consent === 'accepted'
   const isDisabled = consent === 'declined'
+  const errorReportingEnabled = errorReportingConsent === 'accepted'
+  const errorReportingDisabled = errorReportingConsent === 'declined'
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -45,134 +60,269 @@ export default function PrivacyPreferences() {
           </h1>
         </div>
         <p className="text-gray-600 dark:text-gray-400">
-          Manage your analytics preferences and learn about how we protect your privacy
+          Manage your analytics and error reporting preferences and learn about how we protect your privacy
         </p>
       </div>
 
-      {/* Current Status */}
+      {/* Reload Message - shown when any changes require reload */}
+      {showReloadMessage && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-300 mb-3">
+            To apply your changes, please reload the page.
+          </p>
+          <button
+            onClick={handleReload}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reload Page Now
+          </button>
+        </div>
+      )}
+
+      {/* Error Reporting Section */}
       <div className="card p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Current Analytics Status
-        </h2>
         <div className="flex items-center gap-3 mb-4">
-          {isEnabled ? (
-            <>
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Analytics Enabled</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Helping us improve the site with privacy-friendly analytics
-                </p>
-              </div>
-            </>
-          ) : isDisabled ? (
-            <>
-              <XCircle className="w-6 h-6 text-gray-600" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Analytics Disabled</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  We're not collecting any usage data from your visits
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <Shield className="w-6 h-6 text-gray-600" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">No Preference Set</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  You haven't made a choice yet
-                </p>
-              </div>
-            </>
+          <Bug className="w-6 h-6 text-primary-600" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Error Reporting
+          </h2>
+        </div>
+
+        {/* Current Status */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            {errorReportingDisabled ? (
+              <>
+                <XCircle className="w-6 h-6 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Error Reporting Disabled</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Errors won't be reported to our development team
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    Error Reporting Enabled {!errorReportingEnabled && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">(default)</span>}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Helping us catch and fix bugs automatically
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {errorReportingChanged && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                ✓ Your error reporting preference has been saved
+              </p>
+            </div>
           )}
         </div>
 
-        {hasChanged && (
-          <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <p className="text-sm text-green-800 dark:text-green-300">
-              ✓ Your preference has been saved
-            </p>
-          </div>
-        )}
+        {/* Why Error Reporting Matters */}
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">
+            Why Error Reporting is Critical
+          </h3>
+          <p className="text-sm text-blue-800 dark:text-blue-300 mb-3">
+            Error reporting helps us identify and fix bugs that affect your experience. When errors occur, we receive anonymized technical details that help us:
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-sm text-blue-800 dark:text-blue-300">
+            <li>Fix bugs faster and improve stability</li>
+            <li>Understand which features need improvement</li>
+            <li>Prioritize development based on real issues</li>
+            <li>Ensure the app works correctly for all users</li>
+          </ul>
+          <p className="text-sm text-blue-800 dark:text-blue-300 mt-3">
+            <strong>Your help makes this project better for everyone!</strong> Enabling error reporting is one of the most impactful ways you can contribute to LENR Academy's success.
+          </p>
+        </div>
 
-        {showReloadMessage && (
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-300 mb-3">
-              To activate analytics, please reload the page.
-            </p>
+        {/* Error Reporting Preferences */}
+        <div className="mb-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+            Manage Error Reporting
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-4">
             <button
-              onClick={handleReload}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              onClick={() => handleErrorReportingChange('accepted')}
+              className={`p-4 border-2 rounded-lg transition-all ${
+                errorReportingEnabled
+                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
+              }`}
+              aria-pressed={errorReportingEnabled}
             >
-              <RefreshCw className="w-4 h-4" />
-              Reload Page Now
+              <div className="flex items-start gap-3">
+                <CheckCircle className={`w-5 h-5 mt-0.5 ${errorReportingEnabled ? 'text-primary-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <p className={`font-medium mb-1 ${errorReportingEnabled ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'}`}>
+                    Enable Error Reporting
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Automatically report errors to help us fix bugs
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleErrorReportingChange('declined')}
+              className={`p-4 border-2 rounded-lg transition-all ${
+                errorReportingDisabled
+                  ? 'border-gray-600 bg-gray-50 dark:bg-gray-800'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
+              }`}
+              aria-pressed={errorReportingDisabled}
+            >
+              <div className="flex items-start gap-3">
+                <XCircle className={`w-5 h-5 mt-0.5 ${errorReportingDisabled ? 'text-gray-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <p className={`font-medium mb-1 ${errorReportingDisabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
+                    Disable Error Reporting
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Don't send error reports (app may be less stable)
+                  </p>
+                </div>
+              </div>
             </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Change Preferences */}
-      <div className="card p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Manage Your Preferences
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Choose whether to help us improve the site by allowing privacy-friendly analytics
-        </p>
-
-        <div className="grid sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => handleConsentChange('accepted')}
-            className={`p-4 border-2 rounded-lg transition-all ${
-              isEnabled
-                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
-            }`}
-            aria-pressed={isEnabled}
-          >
-            <div className="flex items-start gap-3">
-              <CheckCircle className={`w-5 h-5 mt-0.5 ${isEnabled ? 'text-primary-600' : 'text-gray-400'}`} />
-              <div className="text-left">
-                <p className={`font-medium mb-1 ${isEnabled ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'}`}>
-                  Enable Analytics
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Help us understand how visitors use the site to improve the experience
-                </p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => handleConsentChange('declined')}
-            className={`p-4 border-2 rounded-lg transition-all ${
-              isDisabled
-                ? 'border-gray-600 bg-gray-50 dark:bg-gray-800'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
-            }`}
-            aria-pressed={isDisabled}
-          >
-            <div className="flex items-start gap-3">
-              <XCircle className={`w-5 h-5 mt-0.5 ${isDisabled ? 'text-gray-600' : 'text-gray-400'}`} />
-              <div className="text-left">
-                <p className={`font-medium mb-1 ${isDisabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
-                  Disable Analytics
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  We won't collect any usage data from your visits
-                </p>
-              </div>
-            </div>
-          </button>
+        {/* What Gets Reported */}
+        <div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">What Gets Reported:</h3>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+            <li>Error messages and stack traces</li>
+            <li>Browser type and version</li>
+            <li>Page URL (query parameters scrubbed)</li>
+            <li>App version and release info</li>
+          </ul>
+          <h3 className="font-semibold text-gray-900 dark:text-white mt-4 mb-2">What's NOT Reported:</h3>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+            <li>Personal information or IP addresses</li>
+            <li>Search queries or form inputs</li>
+            <li>Session recordings or screenshots</li>
+            <li>Any identifiable user data</li>
+          </ul>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+            We use <strong>Sentry</strong> with EU hosting for GDPR compliance. All data is anonymized and used solely for debugging purposes.
+          </p>
         </div>
       </div>
 
-      {/* About Analytics */}
+      {/* Analytics Section */}
       <div className="card p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          About Our Analytics
+          Analytics
         </h2>
+
+        {/* Current Status */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            {isEnabled ? (
+              <>
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Analytics Enabled</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Helping us improve the site with privacy-friendly analytics
+                  </p>
+                </div>
+              </>
+            ) : isDisabled ? (
+              <>
+                <XCircle className="w-6 h-6 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Analytics Disabled</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    We're not collecting any usage data from your visits
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <Shield className="w-6 h-6 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">No Preference Set</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    You haven't made a choice yet
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {hasChanged && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                ✓ Your analytics preference has been saved
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Analytics Preferences */}
+        <div className="mb-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+            Manage Analytics
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => handleConsentChange('accepted')}
+              className={`p-4 border-2 rounded-lg transition-all ${
+                isEnabled
+                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
+              }`}
+              aria-pressed={isEnabled}
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle className={`w-5 h-5 mt-0.5 ${isEnabled ? 'text-primary-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <p className={`font-medium mb-1 ${isEnabled ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'}`}>
+                    Enable Analytics
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Help us understand how visitors use the site
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleConsentChange('declined')}
+              className={`p-4 border-2 rounded-lg transition-all ${
+                isDisabled
+                  ? 'border-gray-600 bg-gray-50 dark:bg-gray-800'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
+              }`}
+              aria-pressed={isDisabled}
+            >
+              <div className="flex items-start gap-3">
+                <XCircle className={`w-5 h-5 mt-0.5 ${isDisabled ? 'text-gray-600' : 'text-gray-400'}`} />
+                <div className="text-left">
+                  <p className={`font-medium mb-1 ${isDisabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
+                    Disable Analytics
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Don't collect usage data from your visits
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* About Analytics */}
         <div className="space-y-4 text-gray-700 dark:text-gray-300">
           <p>
             We use <strong>Umami Analytics</strong>, a privacy-friendly, open-source analytics platform that respects your privacy.
