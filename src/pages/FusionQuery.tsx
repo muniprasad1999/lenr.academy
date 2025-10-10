@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Download, Info, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Download, Info, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
@@ -8,6 +8,7 @@ import PeriodicTableSelector from '../components/PeriodicTableSelector'
 import ElementDetailsCard from '../components/ElementDetailsCard'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
 import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
+import DatabaseErrorCard from '../components/DatabaseErrorCard'
 
 // Default values
 const DEFAULT_ELEMENT1 = ['H']
@@ -257,17 +258,7 @@ export default function FusionQuery() {
   }
 
   if (dbError) {
-    return (
-      <div className="card p-6 bg-red-50 dark:bg-red-900/20">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
-          <div>
-            <h3 className="text-lg font-semibold text-red-900 dark:text-red-200 mb-1">Database Error</h3>
-            <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <DatabaseErrorCard error={dbError} />
   }
 
   return (

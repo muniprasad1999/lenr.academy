@@ -6,6 +6,7 @@ import PeriodicTable from '../components/PeriodicTable'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
 import { getNuclidesByElement } from '../services/queryService'
 import DatabaseLoadingCard from '../components/DatabaseLoadingCard'
+import DatabaseErrorCard from '../components/DatabaseErrorCard'
 
 export default function ShowElementData() {
   const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
@@ -122,12 +123,7 @@ export default function ShowElementData() {
   }
 
   if (dbError) {
-    return (
-      <div className="card p-6 border-red-200 bg-red-50 dark:bg-red-900/20">
-        <h2 className="text-xl font-semibold text-red-900 dark:text-red-200 mb-2">Database Error</h2>
-        <p className="text-red-700 dark:text-red-300">{dbError.message}</p>
-      </div>
-    )
+    return <DatabaseErrorCard error={dbError} />
   }
 
   return (

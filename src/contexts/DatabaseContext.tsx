@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { Database } from 'sql.js';
 import { initDatabase, downloadUpdate, getCurrentVersion, type DownloadProgress } from '../services/database';
+import { clearAllCache } from '../services/dbCache';
 import MeteredConnectionWarning from '../components/MeteredConnectionWarning';
 
 // Utility to detect metered connection
@@ -69,6 +70,7 @@ export interface DatabaseContextType {
   // Actions
   startBackgroundUpdate: () => void;
   reloadWithNewVersion: () => void;
+  clearDatabaseCache: () => Promise<void>;
 }
 
 const DatabaseContext = createContext<DatabaseContextType>({
@@ -83,6 +85,7 @@ const DatabaseContext = createContext<DatabaseContextType>({
   updateReady: false,
   startBackgroundUpdate: () => {},
   reloadWithNewVersion: () => {},
+  clearDatabaseCache: async () => {},
 });
 
 export function DatabaseProvider({ children }: { children: ReactNode }) {
@@ -165,6 +168,18 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
     window.location.reload();
   };
 
+  const clearCache = async () => {
+    try {
+      console.log('🗑️ Clearing database cache...');
+      await clearAllCache();
+      console.log('✅ Cache cleared, reloading...');
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to clear cache:', err);
+      throw err;
+    }
+  };
+
   const handleMeteredConfirm = () => {
     localStorage.setItem(METERED_WARNING_KEY, 'accepted');
     setShowMeteredWarning(false);
@@ -193,6 +208,7 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
         updateReady,
         startBackgroundUpdate,
         reloadWithNewVersion,
+        clearDatabaseCache: clearCache,
       }}
     >
       {children}
