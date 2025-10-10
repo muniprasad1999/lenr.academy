@@ -40,6 +40,18 @@ async function acceptMeteredWarningIfPresent(page: Page) {
   }
 }
 
+// Helper to wait for theme to be applied
+async function waitForTheme(page: Page, theme: 'light' | 'dark') {
+  await page.waitForFunction(
+    (expectedTheme) => {
+      const html = document.documentElement;
+      return html.classList.contains(expectedTheme);
+    },
+    theme,
+    { timeout: 5000 }
+  );
+}
+
 // Note: We use context.addInitScript() instead of helpers to set localStorage
 // before page loads, preventing banner flash
 
@@ -137,15 +149,26 @@ async function captureDesktopScreenshots(browser: Browser) {
     fullPage: false, // Viewport only for 16:9 aspect ratio
   });
 
-  // 4. Show Element Data (Periodic Table)
-  console.log('  - Element data page');
+  // 4. Show Element Data (Periodic Table) - Dark Mode
+  console.log('  - Element data page (dark)');
   await page.goto(`${BASE_URL}/element-data`);
   await waitForDatabaseReady(page);
-  await page.waitForTimeout(2000); // Wait for components to fully render
+
+  // Click the Dark Mode button to switch to dark mode
+  const darkModeButton = page.locator('button:has-text("Dark Mode")');
+  await darkModeButton.click();
+  await waitForTheme(page, 'dark'); // Wait for dark theme to be applied
+  await page.waitForTimeout(500); // Small delay for any transitions
+
   await page.screenshot({
-    path: path.join(SCREENSHOT_DIR, 'desktop', 'element-data-light.png'),
+    path: path.join(SCREENSHOT_DIR, 'desktop', 'element-data-dark.png'),
     fullPage: false, // Viewport only for 16:9 aspect ratio
   });
+
+  // Switch back to light mode for remaining screenshots
+  await page.evaluate(() => localStorage.setItem('theme', 'light'));
+  await page.reload();
+  await waitForDatabaseReady(page);
 
   // 6. Dark Mode Query Example
   console.log('  - Query page in dark mode');
@@ -255,20 +278,35 @@ async function captureMobileScreenshots(browser: Browser) {
     fullPage: false, // Viewport only for consistent sizing
   });
 
-  // 2. Mobile Sidebar Open
-  console.log('  - Mobile navigation (sidebar open)');
+  // 2. Mobile Sidebar Open - Dark Mode
+  console.log('  - Mobile navigation (sidebar open, dark)');
+
+  // Click the theme toggle button in the mobile header (it's the rightmost button)
+  // The button is in the mobile header and contains Moon or Sun icon
+  const themeButtons = await page.locator('.lg\\:hidden button').all();
+  // The theme button should be the last one in the mobile header (after the menu button)
+  if (themeButtons.length >= 2) {
+    await themeButtons[themeButtons.length - 1].click();
+    await waitForTheme(page, 'dark'); // Wait for dark theme to be applied
+  }
+
+  // Now open sidebar
   const menuButton = page.getByRole('button', { name: /open menu/i });
   await menuButton.click();
   await page.waitForTimeout(300); // Wait for sidebar animation
+
   await page.screenshot({
-    path: path.join(SCREENSHOT_DIR, 'mobile', 'sidebar-open-light.png'),
+    path: path.join(SCREENSHOT_DIR, 'mobile', 'sidebar-open-dark.png'),
     fullPage: false, // Just capture viewport to show overlay
   });
 
-  // Close sidebar
+  // Close sidebar and switch back to light mode
   const closeButton = page.getByRole('button', { name: /close menu/i });
   await closeButton.click();
   await page.waitForTimeout(300);
+  await page.evaluate(() => localStorage.setItem('theme', 'light'));
+  await page.reload();
+  await waitForDatabaseReady(page);
 
   // 3. Fusion Query Mobile (interface only)
   console.log('  - Fusion query interface (mobile)');

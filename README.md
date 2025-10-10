@@ -58,19 +58,19 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 
 *Fusion Reactions query interface*
 
-<img src="docs/screenshots/desktop/element-data-light.png" alt="Show Element Data with interactive periodic table" width="600"/>
+<img src="docs/screenshots/desktop/element-data-dark.png" alt="Show Element Data with interactive periodic table (dark mode)" width="600"/>
 
-*Show Element Data with interactive periodic table*
+*Show Element Data with interactive periodic table (dark mode)*
 
 ### Mobile Views
 
 <p>
-  <img src="docs/screenshots/mobile/sidebar-open-light.png" alt="Mobile navigation sidebar" width="250"/>
+  <img src="docs/screenshots/mobile/sidebar-open-dark.png" alt="Mobile navigation sidebar (dark mode)" width="250"/>
   <img src="docs/screenshots/mobile/fusion-query-light.png" alt="Fusion Reactions query interface" width="250"/>
   <img src="docs/screenshots/mobile/element-data-light.png" alt="Show Element Data page" width="250"/>
 </p>
 
-*Mobile views: Navigation sidebar, Fusion Reactions query, and Show Element Data*
+*Mobile views: Navigation sidebar (dark mode), Fusion Reactions query, and Show Element Data*
 
 > 📸 **Screenshots are auto-generated** using Playwright. To regenerate: `npm run screenshots`
 

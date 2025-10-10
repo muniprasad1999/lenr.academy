@@ -46,9 +46,8 @@ Sentry is configured to:
 2. Click "Create New Token"
 3. **Name**: `lenr-academy-ci`
 4. **Scopes** (check these):
-   - ✅ `project:read`
-   - ✅ `project:releases`
-   - ✅ `org:read`
+   - ✅ **Project: Read & Write**
+   - ✅ **Release: Admin**
 5. Click "Create Token"
 6. **Copy the token** (you won't see it again!)
 
@@ -199,7 +198,7 @@ https://sentry.io/organizations/YOUR-ORG/issues/
 
 **Solutions**:
 1. Check that `SENTRY_AUTH_TOKEN` is set in GitHub secrets
-2. Verify token has correct scopes (`project:releases`, `org:read`)
+2. Verify token has correct scopes (**Project: Read & Write**, **Release: Admin**)
 3. Confirm organization and project slugs are correct
 
 ### Errors not appearing in Sentry
