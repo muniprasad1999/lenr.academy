@@ -132,7 +132,7 @@ lenr.academy/
 │   ├── index.css             # Global styles with theme support
 │   └── vite-env.d.ts         # Vite environment type definitions
 ├── public/
-│   ├── parkhomov.db              # SQLite database (154MB, gitignored)
+│   ├── parkhomov.db              # SQLite database (161MB, gitignored)
 │   ├── parkhomov.db.meta.json    # Version metadata for updates
 │   └── sql-wasm.wasm             # sql.js WebAssembly binary
 ├── e2e/                      # Playwright E2E tests
@@ -176,7 +176,7 @@ lenr.academy/
 
 ### Overview
 
-The application uses **sql.js** (SQLite compiled to WebAssembly) to run queries entirely in the browser. The 154MB database (`parkhomov.db`) contains Dr. Alexander Parkhomov's nuclear reaction tables.
+The application uses **sql.js** (SQLite compiled to WebAssembly) to run queries entirely in the browser. The 161MB database (`parkhomov.db`) contains Dr. Alexander Parkhomov's nuclear reaction tables.
 
 ### Database Lifecycle
 

@@ -108,5 +108,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Release:** $TAG" >> $GITHUB_STEP_SUMMARY
           echo "**Site:** https://lenr.academy" >> $GITHUB_STEP_SUMMARY
-          echo "**Database:** Uploaded to release assets (154MB)" >> $GITHUB_STEP_SUMMARY
+          echo "**Database:** Uploaded to release assets (161MB)" >> $GITHUB_STEP_SUMMARY
           echo "**Deployed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

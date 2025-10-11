@@ -76,10 +76,10 @@ All reactions are exothermic (energy-producing) and represent thermodynamically 
 
 ## Database
 
-The application uses a **154MB SQLite database** (`parkhomov.db`) containing all nuclear reaction data. The database is:
+The application uses a **161MB SQLite database** (`parkhomov.db`) containing all nuclear reaction data. The database is:
 
 - **Format**: SQLite 3.x
-- **Size**: 154 MB (uncompressed)
+- **Size**: 161 MB (uncompressed)
 - **Tables**: NuclidesPlus, ElementPropertiesPlus, FusionReactions, FissionReactions, TwoToTwoReactions
 - **Hosted**: [db.lenr.academy](https://db.lenr.academy/) - versioned storage with S3
 - **Download**: Available in [GitHub release assets](https://github.com/Episk-pos/lenr.academy/releases/latest) for offline use or external analysis

@@ -47,7 +47,7 @@ npm install
 
 ### Database File
 
-The 154MB `parkhomov.db` file is tracked using **Git LFS** (Large File Storage). When you clone the repository, Git LFS will automatically download the database file to `/public/parkhomov.db`.
+The 161MB `parkhomov.db` file is tracked using **Git LFS** (Large File Storage). When you clone the repository, Git LFS will automatically download the database file to `/public/parkhomov.db`.
 
 **First time using Git LFS?** Install it before cloning:
 
@@ -327,7 +327,7 @@ Read [CLAUDE.md](CLAUDE.md) for detailed architecture documentation, including:
 
 ### Working with the Database
 
-The 154MB SQLite database uses **sql.js** (SQLite compiled to WebAssembly):
+The 161MB SQLite database uses **sql.js** (SQLite compiled to WebAssembly):
 
 - First load: Downloads from `/public/parkhomov.db`
 - Subsequent loads: Cached in IndexedDB

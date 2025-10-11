@@ -13,7 +13,7 @@ export default function DatabaseErrorCard({ error }: DatabaseErrorCardProps) {
   const isCorruptionError = error.message.toLowerCase().includes('file is not a database');
 
   const handleClearCache = async () => {
-    if (!confirm('This will clear the cached database and reload the page. The database (154MB) will be re-downloaded. Continue?')) {
+    if (!confirm('This will clear the cached database and reload the page. The database (161MB) will be re-downloaded. Continue?')) {
       return;
     }
 
@@ -58,7 +58,7 @@ export default function DatabaseErrorCard({ error }: DatabaseErrorCardProps) {
                 {isClearing ? 'Clearing Cache...' : 'Clear Cache & Reload'}
               </button>
               <p className="text-xs text-red-700 dark:text-red-300 mt-2">
-                Note: This will re-download the 154MB database file
+                Note: This will re-download the 161MB database file
               </p>
             </div>
           )}

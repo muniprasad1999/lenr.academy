@@ -156,7 +156,7 @@ If a deployment causes issues:
 
 **Build Output:**
 - Location: `./dist/`
-- Size: ~2MB (excluding 154MB database file)
+- Size: ~2MB (excluding 161MB database file)
 - Contents: HTML, JS, CSS, assets, database files
 
 **Cache Strategy:**

@@ -207,7 +207,7 @@ Pre-releases are marked with:
 
 #### Parkhomov Database (Automatic)
 
-For **non-prerelease** versions, the `parkhomov.db` file (154MB) is automatically uploaded to the GitHub Release during deployment via the `deploy.yml` workflow. This happens after the build step and before AWS deployment.
+For **non-prerelease** versions, the `parkhomov.db` file (161MB) is automatically uploaded to the GitHub Release during deployment via the `deploy.yml` workflow. This happens after the build step and before AWS deployment.
 
 #### Manual Database Upload
 

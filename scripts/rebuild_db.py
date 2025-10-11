@@ -138,8 +138,8 @@ def import_csv(conn, table_name, csv_path):
         # Import rows
         rows_imported = 0
         for row in reader:
-            # Convert empty strings to None for proper NULL handling
-            row = [None if cell == '' else cell for cell in row]
+            # Convert empty strings and 'null' strings to None for proper NULL handling
+            row = [None if cell == '' or cell == 'null' else cell for cell in row]
             cursor.execute(insert_sql, row)
             rows_imported += 1
 
