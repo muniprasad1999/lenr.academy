@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Download, Info, Loader, Eye, EyeOff } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Download, Info, Loader, Eye, EyeOff, Radiation } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
 import type { FissionReaction, QueryFilter, Element, Nuclide, AtomicRadiiData } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { queryFission, getAllElements, getElementBySymbol, getNuclideBySymbol, getAtomicRadii } from '../services/queryService'
@@ -23,20 +23,26 @@ export default function FissionQuery() {
   const [availableElements, setAvailableElements] = useState<Element[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Parse URL parameters or use defaults
+  // Helper to check if any URL parameters exist
+  const hasAnyUrlParams = () => searchParams.toString().length > 0
+
+  // Parse URL parameters or use defaults (only if no params exist)
   const getInitialElement = () => {
     const param = searchParams.get('e')
-    return param ? param.split(',') : DEFAULT_ELEMENT
+    if (param) return param.split(',')
+    return hasAnyUrlParams() ? [] : DEFAULT_ELEMENT
   }
 
   const getInitialOutputElement1 = () => {
     const param = searchParams.get('e1')
-    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT1
+    if (param) return param.split(',')
+    return hasAnyUrlParams() ? [] : DEFAULT_OUTPUT_ELEMENT1
   }
 
   const getInitialOutputElement2 = () => {
     const param = searchParams.get('e2')
-    return param ? param.split(',') : DEFAULT_OUTPUT_ELEMENT2
+    if (param) return param.split(',')
+    return hasAnyUrlParams() ? [] : DEFAULT_OUTPUT_ELEMENT2
   }
 
   const getInitialMinMeV = () => {
@@ -76,6 +82,7 @@ export default function FissionQuery() {
   const [selectedOutputElement2, setSelectedOutputElement2] = useState<string[]>(getInitialOutputElement2())
   const [elements, setElements] = useState<Element[]>([])
   const [nuclides, setNuclides] = useState<Nuclide[]>([])
+  const [radioactiveNuclides, setRadioactiveNuclides] = useState<Set<string>>(new Set())
   const [queryTime, setQueryTime] = useState<number>(0)
   const [totalCount, setTotalCount] = useState(0)
   const [isQuerying, setIsQuerying] = useState(false)
@@ -92,6 +99,7 @@ export default function FissionQuery() {
   const [selectedElementDetails, setSelectedElementDetails] = useState<Element | null>(null)
   const [selectedNuclideDetails, setSelectedNuclideDetails] = useState<Nuclide | null>(null)
   const [selectedElementRadii, setSelectedElementRadii] = useState<AtomicRadiiData | null>(null)
+  const [hasInitializedFromUrl, setHasInitializedFromUrl] = useState(false)
 
   // Load elements when database is ready
   useEffect(() => {
@@ -106,6 +114,35 @@ export default function FissionQuery() {
   useEffect(() => {
     localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
   }, [showBosonFermion])
+
+  // Initialize pinned state from URL params (after results are loaded)
+  // This effect should ONLY run once when results first load, not on every URL change
+  useEffect(() => {
+    if (!showResults || !isInitialized || hasInitializedFromUrl) return
+
+    const pinE = searchParams.get('pinE')
+    const pinN = searchParams.get('pinN')
+
+    // Only initialize if we have URL params and nothing is currently pinned
+    // This prevents re-pinning on every results change
+    if (pinN && !pinnedNuclide && nuclides.some(nuc => `${nuc.E}-${nuc.A}` === pinN)) {
+      // Pinning nuclide from URL - also pin its parent element
+      const [elementSymbol] = pinN.split('-')
+      setHighlightedNuclide(pinN)
+      setPinnedNuclide(true)
+      setHighlightedElement(elementSymbol)
+      setPinnedElement(true)
+      setHasInitializedFromUrl(true)
+    } else if (pinE && !pinnedElement && elements.some(el => el.E === pinE)) {
+      // Only pin element if no nuclide is being pinned
+      setHighlightedElement(pinE)
+      setPinnedElement(true)
+      setHasInitializedFromUrl(true)
+    } else if (!pinE && !pinN) {
+      // No URL params to initialize from
+      setHasInitializedFromUrl(true)
+    }
+  }, [showResults, isInitialized, elements, nuclides, hasInitializedFromUrl, searchParams, pinnedElement, pinnedNuclide])
 
   // Fetch element or nuclide details when pinned
   useEffect(() => {
@@ -176,8 +213,29 @@ export default function FissionQuery() {
       params.set('limit', filter.limit?.toString() || DEFAULT_LIMIT.toString())
     }
 
+    // Add pinned element/nuclide state
+    if (pinnedElement && highlightedElement) {
+      params.set('pinE', highlightedElement)
+    } else if (!showResults) {
+      // Preserve existing pinE parameter during initial load until pinning logic runs
+      const existingPinE = searchParams.get('pinE')
+      if (existingPinE) {
+        params.set('pinE', existingPinE)
+      }
+    }
+
+    if (pinnedNuclide && highlightedNuclide) {
+      params.set('pinN', highlightedNuclide)
+    } else if (!showResults) {
+      // Preserve existing pinN parameter during initial load until pinning logic runs
+      const existingPinN = searchParams.get('pinN')
+      if (existingPinN) {
+        params.set('pinN', existingPinN)
+      }
+    }
+
     setSearchParams(params, { replace: true })
-  }, [selectedElement, selectedOutputElement1, selectedOutputElement2, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
+  }, [selectedElement, selectedOutputElement1, selectedOutputElement2, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, pinnedElement, highlightedElement, pinnedNuclide, highlightedNuclide, isInitialized, showResults, searchParams])
 
   // Auto-execute query when filters change
   useEffect(() => {
@@ -204,6 +262,7 @@ export default function FissionQuery() {
       setResults(result.reactions)
       setElements(result.elements)
       setNuclides(result.nuclides)
+      setRadioactiveNuclides(result.radioactiveNuclides)
       setQueryTime(result.executionTime)
       setTotalCount(result.totalCount)
       setShowResults(true)
@@ -487,18 +546,53 @@ export default function FissionQuery() {
                     const elementMatch = !activeElement || reactionContainsElement(reaction, activeElement)
                     const isDesaturated = (activeNuclide && !nuclideMatch) || (activeElement && !elementMatch)
 
+                    // Check radioactivity for each isotope (O(1) Set lookup instead of SQL query)
+                    const isInputRadioactive = radioactiveNuclides.has(`${reaction.Z}-${reaction.A}`)
+                    const isOutput1Radioactive = radioactiveNuclides.has(`${reaction.Z1}-${reaction.A1}`)
+                    const isOutput2Radioactive = radioactiveNuclides.has(`${reaction.Z2}-${reaction.A2}`)
+
                     return (
                     <tr key={idx} className={isDesaturated ? 'opacity-30 grayscale' : 'transition-all duration-200'}>
                       <td className="bg-blue-50 dark:bg-blue-900/30 text-center">
-                        <div className="font-semibold text-base">{reaction.E}-{reaction.A}</div>
+                        <div className="flex items-center justify-center gap-1">
+                          <Link
+                            to={`/element-data?Z=${reaction.Z}&A=${reaction.A}`}
+                            className="font-semibold text-base hover:underline text-blue-600 dark:text-blue-400"
+                          >
+                            {reaction.E}-{reaction.A}
+                          </Link>
+                          {isInputRadioactive && (
+                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                          )}
+                        </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z})</div>
                       </td>
                       <td className="bg-green-50 dark:bg-green-900/30 text-center">
-                        <div className="font-semibold text-base">{reaction.E1}-{reaction.A1}</div>
+                        <div className="flex items-center justify-center gap-1">
+                          <Link
+                            to={`/element-data?Z=${reaction.Z1}&A=${reaction.A1}`}
+                            className="font-semibold text-base hover:underline text-blue-600 dark:text-blue-400"
+                          >
+                            {reaction.E1}-{reaction.A1}
+                          </Link>
+                          {isOutput1Radioactive && (
+                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                          )}
+                        </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
                       </td>
                       <td className="bg-green-50 dark:bg-green-900/30 text-center">
-                        <div className="font-semibold text-base">{reaction.E2}-{reaction.A2}</div>
+                        <div className="flex items-center justify-center gap-1">
+                          <Link
+                            to={`/element-data?Z=${reaction.Z2}&A=${reaction.A2}`}
+                            className="font-semibold text-base hover:underline text-blue-600 dark:text-blue-400"
+                          >
+                            {reaction.E2}-{reaction.A2}
+                          </Link>
+                          {isOutput2Radioactive && (
+                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                          )}
+                        </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z2})</div>
                       </td>
                       <td className="text-green-600 font-semibold">{reaction.MeV.toFixed(2)}</td>
@@ -580,6 +674,7 @@ export default function FissionQuery() {
                   const isActive = highlightedNuclide === nuclideId
                   const isPinned = pinnedNuclide && highlightedNuclide === nuclideId
                   const isDesaturated = highlightedNuclide && highlightedNuclide !== nuclideId
+                  const nuclideIsRadioactive = radioactiveNuclides.has(`${nuc.Z}-${nuc.A}`)
 
                   return (
                   <div
@@ -594,15 +689,26 @@ export default function FissionQuery() {
                     onMouseLeave={() => !pinnedNuclide && setHighlightedNuclide(null)}
                     onClick={() => {
                       if (pinnedNuclide && highlightedNuclide === nuclideId) {
+                        // Unpinning nuclide only - do NOT unpin parent element
+                        // This allows element to remain pinned independently
                         setPinnedNuclide(false)
                         setHighlightedNuclide(null)
                       } else {
+                        // Pinning nuclide - also pin its parent element
+                        const [elementSymbol] = nuclideId.split('-')
                         setPinnedNuclide(true)
                         setHighlightedNuclide(nuclideId)
+                        setPinnedElement(true)
+                        setHighlightedElement(elementSymbol)
                       }
                     }}
                   >
-                    <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{nuc.E}-{nuc.A}</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{nuc.E}-{nuc.A}</span>
+                      {nuclideIsRadioactive && (
+                        <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" title="Radioactive" />
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Z={nuc.Z}</div>
                   </div>
                   )
@@ -635,9 +741,20 @@ export default function FissionQuery() {
                     onMouseLeave={() => !pinnedElement && setHighlightedElement(null)}
                     onClick={() => {
                       if (pinnedElement && highlightedElement === elementId) {
+                        // Unpinning element only - do NOT unpin child nuclides
+                        // This allows nuclides to remain pinned independently
                         setPinnedElement(false)
                         setHighlightedElement(null)
                       } else {
+                        // Pinning element (without selecting a specific nuclide)
+                        // If a nuclide from a DIFFERENT element is pinned, unpin it first
+                        if (pinnedNuclide && highlightedNuclide) {
+                          const [nuclideParentElement] = highlightedNuclide.split('-')
+                          if (nuclideParentElement !== elementId) {
+                            setPinnedNuclide(false)
+                            setHighlightedNuclide(null)
+                          }
+                        }
                         setPinnedElement(true)
                         setHighlightedElement(elementId)
                       }
@@ -669,6 +786,7 @@ export default function FissionQuery() {
                 <NuclideDetailsCard
                   nuclide={selectedNuclideDetails}
                   onClose={() => {
+                    // Unpin nuclide only, keep element pinned
                     setPinnedNuclide(false)
                     setHighlightedNuclide(null)
                   }}

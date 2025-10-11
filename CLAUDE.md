@@ -38,7 +38,7 @@ npm run db:index                         # Regenerate S3 bucket index.html and v
 # Deployment (AWS S3 + CloudFront)
 npm run deploy       # Deploy to S3 and invalidate CloudFront cache
 npm run deploy:s3    # Sync ./dist to s3://lenr.academy
-npm run deploy:cache # Invalidate CloudFront distribution
+npm run deploy:uncache # Invalidate CloudFront distribution
 ```
 
 ## Architecture
@@ -185,6 +185,15 @@ Each nuclide has two boson/fermion classifications:
 - `nBorF` - Nuclear: based on whether mass number A is even ('b') or odd ('f')
 - `aBorF` - Atomic: based on neutron count (A-Z)
 
+### Hydrogen Isotopes in Database
+
+The database stores hydrogen isotopes separately with distinct element symbols:
+- `H` - Protium (Hydrogen-1)
+- `D` - Deuterium (Hydrogen-2)
+- `T` - Tritium (Hydrogen-3)
+
+**Important**: When users select "H" (Hydrogen) in the periodic table selector UI, the query automatically includes all three isotopes (H, D, and T). This is why the default Two-To-Two query parameters `E1='H', E2='Ni,Li,Al,B,N', E3='C'` returns 5 results with D-2 (deuterium) reactions, not H-1.
+
 ### Testing Metered Connection Warning
 
 The Network Information API has limited browser support. To test the metered warning:
@@ -195,6 +204,19 @@ The Network Information API has limited browser support. To test the metered war
 4. Refresh page
 
 The warning will only trigger in production on mobile browsers with cellular connections.
+
+### Debugging Playwright Test Failures
+
+When investigating Playwright E2E test failures:
+
+1. **Always check the screenshots** in `test-results/` directory first
+2. Screenshots show the exact state of the page when the test failed
+3. Look for:
+   - Viewport scrolling issues (is the target element visible?)
+   - Actual vs. expected element presence in the DOM
+   - Query execution status (e.g., "Showing X of Y reactions")
+   - Whether pinned elements actually exist in the results
+4. The screenshots can reveal issues that aren't obvious from test error messages alone (e.g., "element not found" might mean the element doesn't exist in query results, not that it's off-screen)
 
 ## File Organization
 
@@ -291,3 +313,30 @@ The S3 bucket is configured for static website hosting. View all available versi
 ## Git Workflow
 
 The `.gitignore` excludes `*.db` files but keeps `!*.db.meta.json` for version tracking. The 161MB database file is never committed to Git - it's stored in S3 with explicit versioning.
+
+### Git Stash
+
+When working with stashed changes, **prefer `git stash apply` over `git stash pop`**. This preserves the stash for potential reuse and avoids losing work if something goes wrong during the apply operation.
+
+### Commit Messages
+
+All commits should include the Claude co-authorship footer:
+
+```
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+## GitHub Issues and Pull Requests
+
+When asked to work with GitHub issues or pull requests, **prefer using the GitHub CLI (`gh`)** via the Bash tool rather than web scraping or API calls. The `gh` CLI provides structured output and is already installed in the development environment.
+
+Common commands:
+```bash
+gh issue view 123              # View issue details
+gh issue list --state open     # List open issues
+gh pr view 456                 # View PR details
+gh pr create --title "..." --body "..."  # Create PR
+gh pr checks                   # View PR status checks
+```

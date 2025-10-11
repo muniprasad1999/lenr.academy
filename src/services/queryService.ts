@@ -8,6 +8,7 @@ import type {
   Nuclide,
   Element,
   AtomicRadiiData,
+  DecayData,
 } from '../types';
 
 /**
@@ -159,6 +160,35 @@ function buildOrderClause(filter: QueryFilter): string {
 }
 
 /**
+ * Get Set of radioactive nuclides from a list of nuclides
+ * Returns Set of "Z-A" format (e.g., "26-56") for O(1) lookup
+ * Single batch SQL query instead of individual queries per nuclide
+ */
+function getRadioactiveNuclides(db: Database, nuclides: Nuclide[]): Set<string> {
+  if (nuclides.length === 0) return new Set();
+
+  // Build WHERE clause for all nuclides
+  const conditions = nuclides.map(n => `(Z = ${n.Z} AND A = ${n.A})`).join(' OR ');
+
+  const sql = `
+    SELECT DISTINCT Z, A
+    FROM RadioNuclides
+    WHERE ${conditions}
+  `;
+
+  const results = db.exec(sql);
+  const radioactive = new Set<string>();
+
+  if (results.length > 0) {
+    results[0].values.forEach((row: any[]) => {
+      radioactive.add(`${row[0]}-${row[1]}`);
+    });
+  }
+
+  return radioactive;
+}
+
+/**
  * Query Fusion reactions
  */
 export function queryFusion(db: Database, filter: QueryFilter): QueryResult<FusionReaction> {
@@ -201,12 +231,16 @@ export function queryFusion(db: Database, filter: QueryFilter): QueryResult<Fusi
   const nuclides = getUniqueNuclides(db, reactions, 'fusion');
   const elements = getUniqueElements(db, reactions, 'fusion');
 
+  // Get radioactive nuclides in a single batch query
+  const radioactiveNuclides = getRadioactiveNuclides(db, nuclides);
+
   const executionTime = performance.now() - startTime;
 
   return {
     reactions,
     nuclides,
     elements,
+    radioactiveNuclides,
     executionTime,
     rowCount: reactions.length,
     totalCount,
@@ -255,12 +289,16 @@ export function queryFission(db: Database, filter: QueryFilter): QueryResult<Fis
   const nuclides = getUniqueNuclides(db, reactions, 'fission');
   const elements = getUniqueElements(db, reactions, 'fission');
 
+  // Get radioactive nuclides in a single batch query
+  const radioactiveNuclides = getRadioactiveNuclides(db, nuclides);
+
   const executionTime = performance.now() - startTime;
 
   return {
     reactions,
     nuclides,
     elements,
+    radioactiveNuclides,
     executionTime,
     rowCount: reactions.length,
     totalCount,
@@ -309,12 +347,16 @@ export function queryTwoToTwo(db: Database, filter: QueryFilter): QueryResult<Tw
   const nuclides = getUniqueNuclides(db, reactions, 'twotwo');
   const elements = getUniqueElements(db, reactions, 'twotwo');
 
+  // Get radioactive nuclides in a single batch query
+  const radioactiveNuclides = getRadioactiveNuclides(db, nuclides);
+
   const executionTime = performance.now() - startTime;
 
   return {
     reactions,
     nuclides,
     elements,
+    radioactiveNuclides,
     executionTime,
     rowCount: reactions.length,
     totalCount,
@@ -621,4 +663,98 @@ export function getAtomicRadii(db: Database, Z: number): AtomicRadiiData | null 
     vanDerWaals: vanDerWaals as number | null,
     covalent: covalent as number | null,
   };
+}
+
+/**
+ * Get radioactive decay data for a specific isotope
+ */
+export function getRadioactiveDecayData(db: Database, Z: number, A: number): DecayData[] {
+  const sql = `
+    SELECT RDM, RT, DEKeV, RI, HL, Units
+    FROM RadioNuclides
+    WHERE Z = ? AND A = ?
+    ORDER BY RI DESC
+  `;
+  const results = db.exec(sql, [Z, A]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    return [];
+  }
+
+  const decayData: DecayData[] = [];
+  results[0].values.forEach((row: any[]) => {
+    decayData.push({
+      decayMode: row[0] as string,
+      radiationType: row[1] as string,
+      energyKeV: row[2] as number | null,
+      intensity: row[3] as number | null,
+      halfLife: row[4] as number | null,
+      halfLifeUnits: row[5] as string | null,
+    });
+  });
+
+  return decayData;
+}
+
+/**
+ * Check if an isotope is radioactive (has decay data)
+ */
+export function isRadioactive(db: Database, Z: number, A: number): boolean {
+  const sql = `
+    SELECT COUNT(*) as count
+    FROM RadioNuclides
+    WHERE Z = ? AND A = ?
+  `;
+  const results = db.exec(sql, [Z, A]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    return false;
+  }
+
+  return (results[0].values[0][0] as number) > 0;
+}
+
+/**
+ * Get the primary decay mode for an isotope (highest intensity)
+ */
+export function getPrimaryDecayMode(db: Database, Z: number, A: number): DecayData | null {
+  const sql = `
+    SELECT RDM, RT, DEKeV, RI, HL, Units
+    FROM RadioNuclides
+    WHERE Z = ? AND A = ?
+    ORDER BY RI DESC
+    LIMIT 1
+  `;
+  const results = db.exec(sql, [Z, A]);
+
+  if (results.length === 0 || results[0].values.length === 0) {
+    return null;
+  }
+
+  const row = results[0].values[0];
+  return {
+    decayMode: row[0] as string,
+    radiationType: row[1] as string,
+    energyKeV: row[2] as number | null,
+    intensity: row[3] as number | null,
+    halfLife: row[4] as number | null,
+    halfLifeUnits: row[5] as string | null,
+  };
+}
+
+/**
+ * Get element symbol by atomic number
+ */
+export function getElementSymbolByZ(db: Database, Z: number): string | null {
+  const sql = `
+    SELECT E
+    FROM ElementPropertiesPlus
+    WHERE Z = ?
+    LIMIT 1
+  `;
+  const results = db.exec(sql, [Z]);
+  if (results.length === 0 || results[0].values.length === 0) {
+    return null;
+  }
+  return results[0].values[0][0] as string;
 }

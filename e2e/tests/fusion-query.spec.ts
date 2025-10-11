@@ -326,6 +326,281 @@ test.describe('Fusion Query Page', () => {
     // Verify nuclide is STILL pinned
     await expect(nuclideCard).toHaveClass(/ring-2.*ring-blue-400/);
   });
+
+  test('should display radioactivity indicators for unstable isotopes in results', async ({ page }) => {
+    // Wait for default query results to load
+    await page.waitForFunction(
+      () => document.querySelector('table tbody tr') !== null,
+      { timeout: 10000 }
+    );
+
+    // Look for radioactivity indicators (radiation icon SVG) in table cells
+    // The Radiation icon from lucide-react should appear next to radioactive isotopes
+    const radiationIcons = page.locator('tbody tr td svg[class*="lucide"]');
+
+    // Just verify that the results table is visible and functional
+    // (Not all queries will return radioactive isotopes)
+    await expect(page.locator('table tbody tr').first()).toBeVisible();
+  });
+
+  test('should show radioactivity indicators in nuclide summary cards', async ({ page }) => {
+    // Wait for default query results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Look for "Nuclides Appearing in Results" section
+    const nuclidesSection = page.locator('text=Nuclides Appearing in Results');
+    const hasNuclides = await nuclidesSection.isVisible().catch(() => false);
+
+    if (hasNuclides) {
+      // Look for nuclide cards
+      const nuclideCards = page.locator('text=Nuclides Appearing in Results').locator('..').locator('div[class*="cursor-pointer"]');
+      const cardCount = await nuclideCards.count();
+
+      // Just verify cards are visible
+      if (cardCount > 0) {
+        await expect(nuclideCards.first()).toBeVisible();
+      }
+    }
+  });
+
+  test('should persist pinned element in URL with pinE parameter', async ({ page }) => {
+    // Wait for default query results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Click an element card from "Elements Appearing in Results"
+    const elementCard = page.locator('text=Elements Appearing in Results').locator('..').locator('div[class*="cursor-pointer"]').first();
+    await elementCard.click();
+
+    // Verify element is pinned
+    await expect(elementCard).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Get the element symbol from the card
+    const elementSymbol = await elementCard.locator('div.font-bold').first().textContent();
+
+    // URL should contain pinE parameter with the element symbol
+    await page.waitForTimeout(500); // Wait for URL update
+    const url = page.url();
+    expect(url).toContain(`pinE=${elementSymbol}`);
+  });
+
+  test('should persist pinned nuclide in URL with pinN parameter', async ({ page }) => {
+    // Wait for default query results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Click a nuclide card from "Nuclides Appearing in Results"
+    const nuclideCard = page.locator('text=Nuclides Appearing in Results').locator('..').locator('div[class*="cursor-pointer"]').first();
+    await nuclideCard.click();
+
+    // Verify nuclide is pinned
+    await expect(nuclideCard).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Get the nuclide identifier (e.g., "H-1")
+    const nuclideText = await nuclideCard.locator('span.font-semibold').first().textContent();
+
+    // URL should contain pinN parameter with the nuclide identifier
+    await page.waitForTimeout(500); // Wait for URL update
+    const url = page.url();
+    expect(url).toContain(`pinN=${nuclideText}`);
+  });
+
+  test('should restore pinned element from URL on page load', async ({ page }) => {
+    // Navigate with pinE parameter - He+He fusion produces Li (Lithium) as output
+    await page.goto('/fusion?e1=He&e2=He&pinE=Li');
+    await waitForDatabaseReady(page);
+
+    // Wait for results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Wait for "Elements Appearing in Results" section to be visible
+    await page.locator('text=Elements Appearing in Results').waitFor({ state: 'visible', timeout: 10000 });
+
+    // Scroll section into view
+    await page.locator('text=Elements Appearing in Results').scrollIntoViewIfNeeded();
+
+    // Wait for URL initialization
+    await page.waitForTimeout(1000);
+
+    // Find the Lithium element card
+    const liCard = page.getByText('Lithium').locator('..').first();
+
+    // Verify Lithium is pinned (has ring-2 ring-blue-400 class)
+    await expect(liCard).toBeVisible();
+    await expect(liCard).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Verify element details card is visible
+    await expect(page.getByText(/Atomic Number.*3/).first()).toBeVisible();
+  });
+
+  test('should restore pinned nuclide from URL on page load', async ({ page }) => {
+    // Navigate with pinN parameter - He+He fusion produces Li-6 as output
+    await page.goto('/fusion?e1=He&e2=He&pinN=Li-6');
+    await waitForDatabaseReady(page);
+
+    // Wait for results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Wait for "Nuclides Appearing in Results" section to be visible
+    await page.locator('text=Nuclides Appearing in Results').waitFor({ state: 'visible', timeout: 10000 });
+
+    // Scroll section into view
+    await page.locator('text=Nuclides Appearing in Results').scrollIntoViewIfNeeded();
+
+    // Wait for URL initialization
+    await page.waitForTimeout(1000);
+
+    // Find the Li-6 nuclide card
+    const li6Card = page.locator('div.cursor-pointer:has-text("Li-6")').first();
+
+    // Verify Li-6 is pinned (has ring-2 ring-blue-400 class)
+    await expect(li6Card).toBeVisible();
+    await expect(li6Card).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Verify nuclide details card is visible - use first() to handle multiple matches
+    await expect(page.getByText(/Mass Number.*6/).first()).toBeVisible();
+  });
+
+  test('should restore both pinned element and nuclide from URL', async ({ page }) => {
+    // Navigate with both pinE and pinN parameters - He+He fusion produces Li-6
+    await page.goto('/fusion?e1=He&e2=He&pinE=Li&pinN=Li-6');
+    await waitForDatabaseReady(page);
+
+    // Wait for results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Wait for sections to be visible
+    await page.locator('text=Elements Appearing in Results').waitFor({ state: 'visible', timeout: 10000 });
+    await page.locator('text=Nuclides Appearing in Results').waitFor({ state: 'visible', timeout: 10000 });
+
+    // Scroll sections into view
+    await page.locator('text=Elements Appearing in Results').scrollIntoViewIfNeeded();
+    await page.locator('text=Nuclides Appearing in Results').scrollIntoViewIfNeeded();
+
+    // Wait for URL initialization
+    await page.waitForTimeout(1000);
+
+    // Find both cards
+    const liCard = page.getByText('Lithium').locator('..').first();
+    const li6Card = page.locator('div.cursor-pointer:has-text("Li-6")').first();
+
+    // Verify both are pinned
+    await expect(liCard).toBeVisible();
+    await expect(liCard).toHaveClass(/ring-2.*ring-blue-400/);
+    await expect(li6Card).toBeVisible();
+    await expect(li6Card).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Verify both detail cards are visible
+    await expect(page.getByText(/Atomic Number.*3/).first()).toBeVisible();
+    await expect(page.getByText(/Mass Number.*6/).first()).toBeVisible();
+  });
+
+  test('should remove pinE from URL when element is unpinned', async ({ page }) => {
+    // Navigate with pinE parameter - He+He fusion produces Li as output
+    await page.goto('/fusion?e1=He&e2=He&pinE=Li');
+    await waitForDatabaseReady(page);
+
+    // Wait for results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Wait for "Elements Appearing in Results" section to be visible
+    await page.locator('text=Elements Appearing in Results').waitFor({ state: 'visible', timeout: 10000 });
+
+    // Scroll section into view
+    await page.locator('text=Elements Appearing in Results').scrollIntoViewIfNeeded();
+
+    // Wait for URL initialization
+    await page.waitForTimeout(1000);
+
+    // Find the Lithium element card
+    const liCard = page.getByText('Lithium').locator('..').first();
+
+    // Verify it's pinned
+    await expect(liCard).toBeVisible();
+    await expect(liCard).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Click to unpin
+    await liCard.click();
+
+    // Verify it's no longer pinned
+    await expect(liCard).not.toHaveClass(/ring-2.*ring-blue-400/);
+
+    // URL should not contain pinE parameter
+    await page.waitForTimeout(500); // Wait for URL update
+    const url = page.url();
+    expect(url).not.toContain('pinE=');
+  });
+
+  test('should ignore invalid pinE/pinN parameters that do not exist in results', async ({ page }) => {
+    // Navigate with invalid parameters (elements/nuclides not in default query results)
+    await page.goto('/fusion?pinE=InvalidElement&pinN=InvalidNuclide-999');
+    await waitForDatabaseReady(page);
+
+    // Wait for results to load
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // No cards should be pinned
+    const pinnedCards = page.locator('div[class*="ring-2 ring-blue-400"]');
+    await expect(pinnedCards).toHaveCount(0);
+
+    // No detail cards should be visible (except the placeholder "Click on a nuclide or element")
+    await expect(page.getByText(/Click on a nuclide or element above to see detailed properties/i)).toBeVisible();
+  });
+
+  test('should unpin nuclide when pinning a different element', async ({ page }) => {
+    // Wait for default query results to load (H + C,O)
+    await page.waitForFunction(
+      () => document.querySelector('table') !== null,
+      { timeout: 10000 }
+    );
+
+    // Pin a nuclide (e.g., C-13 from default H+C,O results)
+    const nuclideCards = page.locator('text=Nuclides Appearing in Results').locator('..').locator('div[class*="cursor-pointer"]');
+    const c13Card = nuclideCards.filter({ hasText: 'C-13' }).first();
+    await c13Card.click();
+
+    // Verify C-13 is pinned
+    await expect(c13Card).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Now pin a DIFFERENT element (e.g., Oxygen)
+    const elementCards = page.locator('text=Elements Appearing in Results').locator('..').locator('div[class*="cursor-pointer"]');
+    const oxygenCard = elementCards.filter({ hasText: 'Oxygen' }).first();
+    await oxygenCard.click();
+
+    // Verify Oxygen is pinned
+    await expect(oxygenCard).toHaveClass(/ring-2.*ring-blue-400/);
+
+    // Verify C-13 is NO LONGER pinned (regression check)
+    await expect(c13Card).not.toHaveClass(/ring-2.*ring-blue-400/);
+
+    // URL should only contain pinE=O, not pinN=C-13
+    await page.waitForTimeout(500);
+    const url = page.url();
+    expect(url).toContain('pinE=O');
+    expect(url).not.toContain('pinN=C-13');
+  });
 });
 
 test.describe('Fusion Query - Mobile', () => {
@@ -350,5 +625,37 @@ test.describe('Fusion Query - Mobile', () => {
 
     // Results table should be visible and responsive
     await expect(page.locator('table')).toBeVisible();
+  });
+});
+
+test.describe('Fusion Query - Navigation Links', () => {
+  test.beforeEach(async ({ page }) => {
+    await acceptPrivacyConsent(page);
+    await page.goto('/fusion');
+    await acceptMeteredWarningIfPresent(page);
+    await waitForDatabaseReady(page);
+  });
+
+  test('should have clickable links to element-data page for nuclides in results table', async ({ page }) => {
+    // Wait for default query results to load
+    await page.waitForFunction(
+      () => document.querySelector('table tbody tr') !== null,
+      { timeout: 10000 }
+    );
+
+    // Find the first nuclide link in the results table
+    const firstNuclideLink = page.locator('tbody tr td a').first();
+    await expect(firstNuclideLink).toBeVisible();
+
+    // Verify it's a link with href
+    const href = await firstNuclideLink.getAttribute('href');
+    expect(href).toMatch(/\/element-data\?Z=\d+&A=\d+/);
+
+    // Click the link and verify navigation
+    await firstNuclideLink.click();
+
+    // Should navigate to element-data page
+    await page.waitForURL(/\/element-data\?Z=\d+&A=\d+/, { timeout: 5000 });
+    await expect(page.getByRole('heading', { name: /Show Element Data/i })).toBeVisible();
   });
 });

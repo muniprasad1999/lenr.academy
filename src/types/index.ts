@@ -46,6 +46,15 @@ export interface AtomicRadiiData {
   covalent: number | null;      // Covalent bond radius (pm)
 }
 
+export interface DecayData {
+  decayMode: string;            // Radioactive decay mode (e.g., 'A', 'B-', 'EC')
+  radiationType: string;        // Radiation type emitted
+  energyKeV: number | null;     // Decay energy in keV
+  intensity: number | null;     // Relative intensity (%)
+  halfLife: number | null;      // Half-life numeric value
+  halfLifeUnits: string | null; // Half-life units (s, m, h, d, y)
+}
+
 export interface FusionReaction {
   id: number;
   E1: string;       // Input element 1 symbol
@@ -144,6 +153,7 @@ export interface QueryResult<T = Reaction> {
   reactions: T[];
   nuclides: Nuclide[];
   elements: Element[];
+  radioactiveNuclides: Set<string>;  // Set of "Z-A" format (e.g., "26-56") for O(1) lookup
   executionTime: number;
   rowCount: number;
   totalCount: number;  // Total matching rows without limit
