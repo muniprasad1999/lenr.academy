@@ -40,6 +40,9 @@ export default defineConfig({
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
 
+      // Enable debug logging to help troubleshoot upload issues
+      debug: true,
+
       // Specify the release name (uses git version)
       release: {
         name: getVersion(),
@@ -47,13 +50,18 @@ export default defineConfig({
 
       // Upload source maps but don't include them in the bundle
       sourcemaps: {
-        assets: './dist/**',
+        // Match the build output directory structure
+        assets: './dist/assets/**/*.js',
         ignore: ['node_modules/**'],
         filesToDeleteAfterUpload: ['./dist/**/*.map'],
       },
 
       // Only upload in production builds when auth token is present
       disable: !process.env.SENTRY_AUTH_TOKEN,
+
+      // Tell Sentry where your source files are hosted
+      // This helps Sentry match source maps with incoming errors
+      urlPrefix: '~/assets',
     }),
   ],
   resolve: {

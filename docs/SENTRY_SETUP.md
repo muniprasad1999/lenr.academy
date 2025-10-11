@@ -219,6 +219,24 @@ https://sentry.io/organizations/YOUR-ORG/issues/
    ```
 2. Verify release name matches in Sentry dashboard
 3. Ensure build completed successfully
+4. Confirm debug IDs are embedded in JavaScript files (check verification step output in GitHub Actions)
+
+### Understanding Source Map Upload
+
+The Vite plugin configuration has been optimized for reliable uploads:
+
+- **Debug mode**: Enabled for verbose logging during builds
+- **Asset targeting**: Configured to explicitly target `./dist/assets/**/*.js`
+- **URL prefix**: Set to `~/assets` to match production serving path
+- **Debug ID approach**: Uses modern debug ID injection instead of filename matching
+
+**Important**: Source map files (`.map`) are automatically **deleted** from `dist/` after upload to Sentry. This is correct and expected behavior:
+- Maps are stored securely on Sentry's servers
+- JavaScript files contain embedded debug IDs for matching
+- `.map` files should NOT appear in S3 or production deployments
+- This prevents your source code from being publicly accessible
+
+If you see `.map` files in your production deployment, something is wrong with the build process.
 
 ---
 

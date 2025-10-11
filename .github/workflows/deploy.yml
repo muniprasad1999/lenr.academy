@@ -41,6 +41,26 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npm run build
 
+      - name: Verify source maps were uploaded to Sentry
+        run: |
+          echo "## Source Map Upload Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if JS files contain Sentry debug IDs
+          if grep -q "_sentryDebugIds" dist/assets/*.js; then
+            echo "✅ Debug IDs found in JavaScript bundles" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Warning: Debug IDs not found in JavaScript bundles" >> $GITHUB_STEP_SUMMARY
+            echo "This may indicate source maps were not properly uploaded to Sentry" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check that source map files were deleted (security)
+          if [ -f dist/assets/*.map ]; then
+            echo "⚠️ Warning: Source map files still present in dist/" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Source map files properly deleted from bundle" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Upload database to release
         env:
           GH_TOKEN: ${{ github.token }}
