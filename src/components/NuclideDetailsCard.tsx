@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { X, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { X, ChevronDown, ChevronUp, ArrowRight, Radiation } from 'lucide-react'
 import type { Nuclide, DecayData } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { getRadioactiveDecayData, getElementSymbolByZ, getNuclideBySymbol } from '../services/queryService'
@@ -66,6 +66,31 @@ function getDaughterNuclide(Z: number, A: number, E: string, decayMode: string):
   return null
 }
 
+// Comprehensive radiation type information
+const RADIATION_TYPE_INFO: Record<string, { name: string; description: string; url: string; category: string }> = {
+  'A': { name: 'Alpha particle', description: 'He-4 nucleus', url: 'https://en.wikipedia.org/wiki/Alpha_particle', category: 'primary' },
+  'B-': { name: 'Beta minus', description: 'electron emission', url: 'https://en.wikipedia.org/wiki/Beta_decay', category: 'primary' },
+  'B+': { name: 'Beta plus', description: 'positron emission', url: 'https://en.wikipedia.org/wiki/Positron_emission', category: 'primary' },
+  'B': { name: 'Beta decay', description: 'unspecified sign', url: 'https://en.wikipedia.org/wiki/Beta_decay', category: 'primary' },
+  'EC': { name: 'Electron capture', description: 'orbital electron absorbed', url: 'https://en.wikipedia.org/wiki/Electron_capture', category: 'primary' },
+  'IT': { name: 'Isomeric transition', description: 'excited state decay', url: 'https://en.wikipedia.org/wiki/Isomeric_transition', category: 'primary' },
+  'G': { name: 'Gamma ray', description: 'high-energy photon', url: 'https://en.wikipedia.org/wiki/Gamma_ray', category: 'gamma' },
+  'G-AN': { name: 'Annihilation gamma', description: 'positron annihilation', url: 'https://en.wikipedia.org/wiki/Electron%E2%80%93positron_annihilation', category: 'gamma' },
+  'G-X-K': { name: 'K-shell X-ray', description: 'K shell transition', url: 'https://en.wikipedia.org/wiki/Characteristic_X-ray', category: 'xray' },
+  'G-X-KA1': { name: 'Kα1 X-ray', description: 'K shell α1 transition', url: 'https://en.wikipedia.org/wiki/Characteristic_X-ray', category: 'xray' },
+  'G-X-KA2': { name: 'Kα2 X-ray', description: 'K shell α2 transition', url: 'https://en.wikipedia.org/wiki/Characteristic_X-ray', category: 'xray' },
+  'G-X-KB': { name: 'Kβ X-ray', description: 'K shell β transition', url: 'https://en.wikipedia.org/wiki/Characteristic_X-ray', category: 'xray' },
+  'G-X-L': { name: 'L-shell X-ray', description: 'L shell transition', url: 'https://en.wikipedia.org/wiki/Characteristic_X-ray', category: 'xray' },
+  'E-CE-K': { name: 'K-shell conversion electron', description: 'internal conversion from K shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-CE-L': { name: 'L-shell conversion electron', description: 'internal conversion from L shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-CE-M': { name: 'M-shell conversion electron', description: 'internal conversion from M shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-CE-M+': { name: 'M+ shell conversion electron', description: 'internal conversion from M+ shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-CE-MN+': { name: 'MN+ shell conversion electron', description: 'internal conversion from MN+ shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-CE-N+': { name: 'N+ shell conversion electron', description: 'internal conversion from N+ shell', url: 'https://en.wikipedia.org/wiki/Internal_conversion', category: 'electron' },
+  'E-AU-K': { name: 'K-shell Auger electron', description: 'atomic de-excitation from K shell', url: 'https://en.wikipedia.org/wiki/Auger_effect', category: 'electron' },
+  'E-AU-L': { name: 'L-shell Auger electron', description: 'atomic de-excitation from L shell', url: 'https://en.wikipedia.org/wiki/Auger_effect', category: 'electron' },
+}
+
 export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsCardProps) {
   const { db } = useDatabase()
   const navigate = useNavigate()
@@ -81,6 +106,17 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
     const data = getRadioactiveDecayData(db, nuclide.Z, nuclide.A)
     setDecayData(data)
   }, [nuclide, db])
+
+  // Compute unique radiation types present in the decay data
+  const uniqueRadiationTypes = useMemo(() => {
+    const types = new Set<string>()
+    decayData.forEach(decay => {
+      if (decay.radiationType) {
+        types.add(decay.radiationType)
+      }
+    })
+    return Array.from(types).sort()
+  }, [decayData])
 
   // Handler to navigate to daughter nuclide
   const handleDecayClick = (decayMode: string) => {
@@ -110,13 +146,18 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
     <div className="card p-6 animate-fade-in">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold mb-1">
+          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
             <Link
               to={`/element-data?Z=${nuclide.Z}&A=${nuclide.A}`}
               className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
             >
               {nuclide.E}-{nuclide.A}
             </Link>
+            {decayData.length > 0 && (
+              <span title="Radioactive">
+                <Radiation className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </span>
+            )}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Atomic Number: {nuclide.Z} • Mass Number: {nuclide.A}
@@ -250,122 +291,133 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
               Radioactive Decay
             </h3>
-            <div className="space-y-2">
-              {decayData.slice(0, 3).map((decay, idx) => {
-                const style = getDecayModeStyle(decay.decayMode)
-                const daughter = getDaughterNuclide(nuclide.Z, nuclide.A, nuclide.E, decay.decayMode)
-                const hasDaughter = daughter !== null
-                const daughterE = hasDaughter && db ? (daughter!.E || getElementSymbolByZ(db, daughter!.Z)) : null
+            <div className="-mx-6 sm:mx-0 overflow-x-auto">
+              <table className="min-w-full text-xs border border-gray-200 dark:border-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="pl-6 pr-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Decay Mode</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Radiation</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Energy (MeV)</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Intensity (%)</th>
+                    <th className="pl-3 pr-6 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Half-life</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {/* Show first 4 decay modes */}
+                  {decayData.slice(0, 4).map((decay, idx) => {
+                    const style = getDecayModeStyle(decay.decayMode)
+                    const daughter = getDaughterNuclide(nuclide.Z, nuclide.A, nuclide.E, decay.decayMode)
+                    const hasDaughter = daughter !== null
+                    const daughterE = hasDaughter && db ? (daughter!.E || getElementSymbolByZ(db, daughter!.Z)) : null
 
-                return (
-                  <div key={idx} className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDecayClick(decay.decayMode)}
-                      disabled={!hasDaughter}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} ${
-                        hasDaughter ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default opacity-70'
-                      } flex items-center gap-1`}
-                      title={hasDaughter ? `View daughter nuclide` : 'Decay mode'}
-                    >
-                      {decay.decayMode}
-                      {hasDaughter && (
-                        <>
-                          <ArrowRight className="w-3 h-3" />
-                          <span>{daughterE}-{daughter!.A}</span>
-                        </>
-                      )}
-                    </button>
-                    {decay.energyKeV !== null && (
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {(decay.energyKeV / 1000).toFixed(2)} MeV
-                      </span>
-                    )}
-                    {decay.intensity !== null && (
-                      <span className="text-xs text-gray-500 dark:text-gray-500">
-                        ({decay.intensity.toFixed(1)}%)
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-
-              {decayData.length > 3 && (
-                <button
-                  onClick={() => setShowFullDecayTable(!showFullDecayTable)}
-                  className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2"
-                >
-                  {showFullDecayTable ? (
-                    <>
-                      <ChevronUp className="w-3 h-3" />
-                      Hide details
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3" />
-                      Show {decayData.length - 3} more decay mode{decayData.length - 3 !== 1 ? 's' : ''}
-                    </>
-                  )}
-                </button>
-              )}
-
-              {showFullDecayTable && decayData.length > 3 && (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="min-w-full text-xs border border-gray-200 dark:border-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Decay Mode</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Radiation</th>
-                        <th className="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Energy (MeV)</th>
-                        <th className="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Intensity (%)</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Half-life</th>
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="pl-6 pr-3 py-2">
+                          <button
+                            onClick={() => handleDecayClick(decay.decayMode)}
+                            disabled={!hasDaughter}
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} ${
+                              hasDaughter ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default opacity-70'
+                            } flex items-center gap-1`}
+                            title={hasDaughter ? `View daughter nuclide` : 'Decay mode'}
+                          >
+                            {decay.decayMode}
+                            {hasDaughter && (
+                              <>
+                                <ArrowRight className="w-3 h-3" />
+                                <span>{daughterE}-{daughter!.A}</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{decay.radiationType}</td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {decay.energyKeV !== null ? (decay.energyKeV / 1000).toFixed(2) : '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {decay.intensity !== null ? decay.intensity.toFixed(1) : '—'}
+                        </td>
+                        <td className="pl-3 pr-6 py-2 text-gray-900 dark:text-gray-100">
+                          {decay.halfLife !== null && decay.halfLifeUnits !== null
+                            ? decay.halfLife >= 10000
+                              ? `${decay.halfLife.toExponential(2)} ${decay.halfLifeUnits}`
+                              : `${decay.halfLife} ${decay.halfLifeUnits}`
+                            : '—'}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {decayData.map((decay, idx) => {
-                        const style = getDecayModeStyle(decay.decayMode)
-                        const daughter = getDaughterNuclide(nuclide.Z, nuclide.A, nuclide.E, decay.decayMode)
-                        const hasDaughter = daughter !== null
-                        const daughterE = hasDaughter && db ? (daughter!.E || getElementSymbolByZ(db, daughter!.Z)) : null
+                    )
+                  })}
 
-                        return (
-                          <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                            <td className="px-3 py-2">
-                              <button
-                                onClick={() => handleDecayClick(decay.decayMode)}
-                                disabled={!hasDaughter}
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} ${
-                                  hasDaughter ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default opacity-70'
-                                } flex items-center gap-1`}
-                                title={hasDaughter ? `View daughter nuclide` : 'Decay mode'}
-                              >
-                                {decay.decayMode}
-                                {hasDaughter && (
-                                  <>
-                                    <ArrowRight className="w-3 h-3" />
-                                    <span>{daughterE}-{daughter!.A}</span>
-                                  </>
-                                )}
-                              </button>
-                            </td>
-                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{decay.radiationType}</td>
-                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                              {decay.energyKeV !== null ? (decay.energyKeV / 1000).toFixed(2) : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                              {decay.intensity !== null ? decay.intensity.toFixed(1) : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
-                              {decay.halfLife !== null && decay.halfLifeUnits !== null
-                                ? `${decay.halfLife} ${decay.halfLifeUnits}`
-                                : '—'}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                  {/* Toggle button row */}
+                  {decayData.length > 4 && (
+                    <tr className="border-t-2 border-gray-300 dark:border-gray-600">
+                      <td colSpan={5} className="px-3 py-2 text-center">
+                        <button
+                          onClick={() => setShowFullDecayTable(!showFullDecayTable)}
+                          className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {showFullDecayTable ? (
+                            <>
+                              <ChevronUp className="w-3 h-3" />
+                              Hide {decayData.length - 4} additional decay mode{decayData.length - 4 !== 1 ? 's' : ''}
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3 h-3" />
+                              Show {decayData.length - 4} more decay mode{decayData.length - 4 !== 1 ? 's' : ''}
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Additional decay modes when expanded */}
+                  {showFullDecayTable && decayData.length > 4 && decayData.slice(4).map((decay, idx) => {
+                    const style = getDecayModeStyle(decay.decayMode)
+                    const daughter = getDaughterNuclide(nuclide.Z, nuclide.A, nuclide.E, decay.decayMode)
+                    const hasDaughter = daughter !== null
+                    const daughterE = hasDaughter && db ? (daughter!.E || getElementSymbolByZ(db, daughter!.Z)) : null
+
+                    return (
+                      <tr key={idx + 4} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-gray-50/30 dark:bg-gray-800/20">
+                        <td className="pl-6 pr-3 py-2">
+                          <button
+                            onClick={() => handleDecayClick(decay.decayMode)}
+                            disabled={!hasDaughter}
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} ${
+                              hasDaughter ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default opacity-70'
+                            } flex items-center gap-1`}
+                            title={hasDaughter ? `View daughter nuclide` : 'Decay mode'}
+                          >
+                            {decay.decayMode}
+                            {hasDaughter && (
+                              <>
+                                <ArrowRight className="w-3 h-3" />
+                                <span>{daughterE}-{daughter!.A}</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{decay.radiationType}</td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {decay.energyKeV !== null ? (decay.energyKeV / 1000).toFixed(2) : '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {decay.intensity !== null ? decay.intensity.toFixed(1) : '—'}
+                        </td>
+                        <td className="pl-3 pr-6 py-2 text-gray-900 dark:text-gray-100">
+                          {decay.halfLife !== null && decay.halfLifeUnits !== null
+                            ? decay.halfLife >= 10000
+                              ? `${decay.halfLife.toExponential(2)} ${decay.halfLifeUnits}`
+                              : `${decay.halfLife} ${decay.halfLifeUnits}`
+                            : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -388,126 +440,24 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
             Radiation Type Legend
           </h3>
           <div className="grid md:grid-cols-2 gap-x-4 gap-y-1 text-xs text-amber-800 dark:text-amber-300">
-            <div>
-              <strong>A:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Alpha_particle"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Alpha particle
-              </a>
-              {' '}(He-4 nucleus)
-            </div>
-            <div>
-              <strong>B-, β-:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Beta_decay"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Beta minus
-              </a>
-              {' '}(electron emission)
-            </div>
-            <div>
-              <strong>B+, β+:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Positron_emission"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Beta plus
-              </a>
-              {' '}(positron emission)
-            </div>
-            <div>
-              <strong>EC:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Electron_capture"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Electron capture
-              </a>
-              {' '}(orbital electron absorbed)
-            </div>
-            <div>
-              <strong>IT:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Isomeric_transition"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Isomeric transition
-              </a>
-              {' '}(excited state decay)
-            </div>
-            <div>
-              <strong>G:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Gamma_ray"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Gamma ray
-              </a>
-              {' '}(high-energy photon)
-            </div>
-            <div>
-              <strong>E-CE:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Internal_conversion"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Conversion electron
-              </a>
-              {' '}(internal conversion)
-            </div>
-            <div>
-              <strong>E-AU:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Auger_effect"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Auger electron
-              </a>
-              {' '}(atomic de-excitation)
-            </div>
-            <div>
-              <strong>G-X:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Characteristic_X-ray"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                X-ray
-              </a>
-              {' '}(atomic shell transitions)
-            </div>
-            <div>
-              <strong>G-AN:</strong>{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Electron%E2%80%93positron_annihilation"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
-              >
-                Annihilation gamma
-              </a>
-              {' '}(positron annihilation)
-            </div>
+            {uniqueRadiationTypes.map(type => {
+              const info = RADIATION_TYPE_INFO[type]
+              if (!info) return null
+              return (
+                <div key={type}>
+                  <strong>{type}:</strong>{' '}
+                  <a
+                    href={info.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline hover:text-amber-900 dark:hover:text-amber-100"
+                  >
+                    {info.name}
+                  </a>
+                  {' '}({info.description})
+                </div>
+              )
+            })}
             <div className="md:col-span-2 mt-1 text-xs opacity-80">
               Shell designations: K (innermost), L, M, N (outer shells)
             </div>
