@@ -562,7 +562,9 @@ export default function FissionQuery() {
                             {reaction.E}-{reaction.A}
                           </Link>
                           {isInputRadioactive && (
-                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                            <span title="Radioactive">
+                              <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            </span>
                           )}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z})</div>
@@ -576,7 +578,9 @@ export default function FissionQuery() {
                             {reaction.E1}-{reaction.A1}
                           </Link>
                           {isOutput1Radioactive && (
-                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                            <span title="Radioactive">
+                              <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            </span>
                           )}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z1})</div>
@@ -590,7 +594,9 @@ export default function FissionQuery() {
                             {reaction.E2}-{reaction.A2}
                           </Link>
                           {isOutput2Radioactive && (
-                            <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" title="Radioactive" />
+                            <span title="Radioactive">
+                              <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            </span>
                           )}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">(Z={reaction.Z2})</div>
@@ -706,7 +712,9 @@ export default function FissionQuery() {
                     <div className="flex items-center justify-between gap-1">
                       <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{nuc.E}-{nuc.A}</span>
                       {nuclideIsRadioactive && (
-                        <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" title="Radioactive" />
+                        <span title="Radioactive">
+                          <Radiation className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                        </span>
                       )}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Z={nuc.Z}</div>
