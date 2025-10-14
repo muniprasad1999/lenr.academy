@@ -136,7 +136,7 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
   }
 
   return (
-    <div className="card p-6 animate-fade-in border-2 border-amber-200 dark:border-amber-800 max-w-full">
+    <div className="card p-6 animate-fade-in border-2 border-amber-200 dark:border-amber-800 max-w-full overflow-hidden">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -243,7 +243,7 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
               Radioactive Decay
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs border border-gray-200 dark:border-gray-700">
+              <table className="min-w-max text-xs border border-gray-200 dark:border-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="pl-6 pr-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Decay Mode</th>
