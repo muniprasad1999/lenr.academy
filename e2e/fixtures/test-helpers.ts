@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 /**
  * Helper to wait for database to be loaded
@@ -188,4 +188,43 @@ export async function clickOnMobile(page: Page, selector: ReturnType<typeof page
 
   // Click with extended timeout
   await selector.click({ timeout: 15000 });
+}
+
+/**
+ * Helper to wait for CSS opacity transition to complete and stabilize
+ * More reliable than fixed timeouts, especially in WebKit on CI
+ *
+ * @param page - Playwright page instance
+ * @param element - Element whose parent's opacity to check
+ * @param expectedOpacity - Expected opacity value (0 or 1)
+ * @param timeout - Maximum time to wait in milliseconds (default 3000)
+ */
+export async function waitForOpacityTransition(
+  page: Page,
+  element: Locator,
+  expectedOpacity: number,
+  timeout = 3000
+) {
+  const startTime = Date.now();
+  let stableCount = 0;
+
+  while (Date.now() - startTime < timeout) {
+    const opacity = parseFloat(
+      await element.evaluate(el =>
+        window.getComputedStyle(el.parentElement!).opacity
+      )
+    );
+
+    // Check if within 1% of expected value (tolerance for floating point)
+    if (Math.abs(opacity - expectedOpacity) < 0.01) {
+      stableCount++;
+      if (stableCount >= 3) return; // Stable for 3 consecutive checks (150ms)
+    } else {
+      stableCount = 0;
+    }
+
+    await page.waitForTimeout(50);
+  }
+
+  throw new Error(`Opacity never stabilized at ${expectedOpacity} within ${timeout}ms`);
 }

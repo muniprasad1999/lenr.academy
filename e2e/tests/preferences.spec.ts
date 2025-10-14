@@ -305,6 +305,15 @@ test.describe('User Preferences Persistence', () => {
     await page.reload();
     await waitForDatabaseReady(page);
 
+    // Wait for React to apply theme from localStorage
+    await page.waitForFunction(
+      () => {
+        const htmlElement = document.documentElement;
+        return htmlElement.classList.contains('dark') || htmlElement.classList.contains('light');
+      },
+      { timeout: 2000 }
+    );
+
     // Check theme persisted
     const html = page.locator('html');
     await expect(html).toHaveClass(/dark/);

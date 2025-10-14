@@ -3,6 +3,7 @@ import {
   waitForDatabaseReady,
   acceptMeteredWarningIfPresent,
   acceptPrivacyConsent,
+  waitForOpacityTransition,
 } from '../fixtures/test-helpers';
 
 test.describe('Version Display', () => {
@@ -92,8 +93,8 @@ test.describe('Version Display', () => {
     const collapseButton = page.getByRole('button', { name: /collapse sidebar/i });
     await collapseButton.click();
 
-    // Wait for animation
-    await page.waitForTimeout(350);
+    // Wait for opacity transition to complete
+    await waitForOpacityTransition(page, versionElement, 0);
 
     // Version should be visually hidden (opacity 0) when sidebar is collapsed
     const opacity = await versionElement.evaluate(el => window.getComputedStyle(el.parentElement!).opacity);
@@ -107,10 +108,12 @@ test.describe('Version Display', () => {
     // Collapse sidebar first
     const collapseButton = page.getByRole('button', { name: /collapse sidebar/i });
     await collapseButton.click();
-    await page.waitForTimeout(350);
+
+    // Wait for collapse opacity transition to complete
+    const versionElement = page.getByTestId('app-version').last();
+    await waitForOpacityTransition(page, versionElement, 0);
 
     // Version should be visually hidden (opacity 0) when collapsed
-    const versionElement = page.getByTestId('app-version').last();
     let opacity = await versionElement.evaluate(el => window.getComputedStyle(el.parentElement!).opacity);
     expect(parseFloat(opacity)).toBe(0);
 
@@ -118,8 +121,8 @@ test.describe('Version Display', () => {
     const expandButton = page.getByRole('button', { name: /expand sidebar/i });
     await expandButton.click();
 
-    // Wait for CSS transition to complete (150ms delay + 150ms duration + buffer)
-    await page.waitForTimeout(400);
+    // Wait for expand opacity transition to complete
+    await waitForOpacityTransition(page, versionElement, 1);
 
     // Version should be visible again (opacity 1)
     opacity = await versionElement.evaluate(el => window.getComputedStyle(el.parentElement!).opacity);
