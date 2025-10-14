@@ -136,7 +136,7 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
   }
 
   return (
-    <div className="card p-6 animate-fade-in border-2 border-amber-200 dark:border-amber-800">
+    <div className="card p-6 animate-fade-in border-2 border-amber-200 dark:border-amber-800 overflow-hidden max-w-full">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -179,21 +179,21 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
             Nuclear Properties
           </h3>
           <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Element:</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclideData.E}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Element:</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclideData.E}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Protons (Z):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclideData.Z}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Protons (Z):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclideData.Z}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Mass Number (A):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclideData.A}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Mass Number (A):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclideData.A}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Neutrons (N):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclideData.A - nuclideData.Z}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Neutrons (N):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclideData.A - nuclideData.Z}</dd>
             </div>
           </dl>
         </div>
@@ -203,16 +203,16 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
               Stability
             </h3>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-gray-600 dark:text-gray-400">Log₁₀ Half-life:</dt>
-                <dd className="font-medium text-gray-900 dark:text-gray-100">
+            <dl className="space-y-2 text-sm overflow-hidden">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Log₁₀ Half-life:</dt>
+                <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                   {nuclideData.logHalfLife.toFixed(2)} years
                 </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-600 dark:text-gray-400">Half-life:</dt>
-                <dd className="font-medium text-gray-900 dark:text-gray-100">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Half-life:</dt>
+                <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                   {nuclideData.halfLife !== null && nuclideData.Units !== null
                     ? nuclideData.halfLife >= 10000
                       ? `${nuclideData.halfLife.toExponential(2)} ${expandHalfLifeUnit(nuclideData.Units)}`
@@ -220,15 +220,15 @@ export default function RadioactiveNuclideCard({ nuclideData, onClose }: Radioac
                     : Math.pow(10, nuclideData.logHalfLife).toExponential(2) + ' years'}
                 </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-600 dark:text-gray-400">Primary Decay Mode:</dt>
-                <dd className="font-medium text-gray-900 dark:text-gray-100">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Primary Decay Mode:</dt>
+                <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">
                   <span className={`px-2 py-1 rounded-full text-xs ${getDecayModeStyle(nuclideData.RDM).bg} ${getDecayModeStyle(nuclideData.RDM).text}`}>
                     {nuclideData.RDM}
                   </span>
                 </dd>
               </div>
-              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-300">
+              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-300 break-words">
                 {nuclideData.logHalfLife > 9 ? 'Stable or very long-lived' :
                  nuclideData.logHalfLife > 0 ? 'Radioactive' :
                  'Short-lived radioactive'}

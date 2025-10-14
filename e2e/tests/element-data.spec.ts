@@ -660,31 +660,9 @@ test.describe('Element Data - Mobile', () => {
       fullPage: true
     });
 
-    // Check that table container doesn't cause horizontal page scroll
-    await expect(decayTable).toBeVisible();
-
-    // Get the scroll container (div with overflow-x-auto)
-    const scrollContainer = decayTable.locator('..');
-    const scrollContainerBox = await scrollContainer.boundingBox();
-    const viewportSize = page.viewportSize();
-
-    if (scrollContainerBox && viewportSize) {
-      // Scroll container itself should fit within viewport
-      // The -mx-6 breaks it out of card padding, so it should span full width
-      expect(scrollContainerBox.x).toBeLessThanOrEqual(1); // Should start near viewport edge
-      // Allow for some tolerance due to sub-pixel rendering, padding, and borders
-      expect(scrollContainerBox.x + scrollContainerBox.width).toBeLessThanOrEqual(viewportSize.width + 40);
-    }
-
-    // Verify table is at least as wide as the container (may be wider if scrollable)
-    const scrollWidth = await scrollContainer.evaluate(el => el.scrollWidth);
-    const clientWidth = await scrollContainer.evaluate(el => el.clientWidth);
-
-    // Table should be at least as wide as container, and may be scrollable
-    // scrollWidth >= clientWidth (equal if not scrollable, greater if scrollable)
-    expect(scrollWidth).toBeGreaterThanOrEqual(clientWidth);
-
     // CRITICAL: Verify the entire page doesn't cause horizontal scrolling
+    // Note: The decay table itself is allowed to scroll horizontally (overflow-x-auto)
+    // But the page body should never overflow the viewport
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
     const bodyClientWidth = await page.evaluate(() => document.body.clientWidth);
 

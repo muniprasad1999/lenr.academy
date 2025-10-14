@@ -149,7 +149,7 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
   if (!nuclide) return null
 
   return (
-    <div className="card p-6 animate-fade-in">
+    <div className="card p-6 animate-fade-in overflow-hidden max-w-full">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -181,31 +181,31 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
             Nuclear Properties
           </h3>
           <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Element:</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclide.E}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Element:</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclide.E}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Protons (Z):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclide.Z}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Protons (Z):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclide.Z}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Mass Number (A):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclide.A}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Mass Number (A):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclide.A}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Neutrons (N):</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">{nuclide.A - nuclide.Z}</dd>
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Neutrons (N):</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right">{nuclide.A - nuclide.Z}</dd>
             </div>
           </dl>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
             Quantum Properties
           </h3>
@@ -239,26 +239,26 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
           </dl>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
             Energy & Mass
           </h3>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Binding Energy:</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">
+          <dl className="space-y-2 text-sm overflow-hidden">
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Binding Energy:</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                 {nuclide.BE.toFixed(3)} MeV
               </dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">BE per Nucleon:</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">BE per Nucleon:</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                 {(nuclide.BE / nuclide.A).toFixed(3)} MeV
               </dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600 dark:text-gray-400">Atomic Mass:</dt>
-              <dd className="font-medium text-gray-900 dark:text-gray-100">
+            <div className="flex justify-between gap-2">
+              <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Atomic Mass:</dt>
+              <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                 {nuclide.AMU.toFixed(6)} amu
               </dd>
             </div>
@@ -266,24 +266,24 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
         </div>
 
         {typeof nuclide.logHalfLife === 'number' && !isNaN(nuclide.logHalfLife) && (
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
               Stability
             </h3>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-gray-600 dark:text-gray-400">Log₁₀ Half-life:</dt>
-                <dd className="font-medium text-gray-900 dark:text-gray-100">
+            <dl className="space-y-2 text-sm overflow-hidden">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Log₁₀ Half-life:</dt>
+                <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                   {nuclide.logHalfLife.toFixed(2)} years
                 </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-600 dark:text-gray-400">Half-life:</dt>
-                <dd className="font-medium text-gray-900 dark:text-gray-100">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 dark:text-gray-400 flex-shrink-0">Half-life:</dt>
+                <dd className="font-medium text-gray-900 dark:text-gray-100 text-right truncate">
                   {Math.pow(10, nuclide.logHalfLife).toExponential(2)} years
                 </dd>
               </div>
-              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-300">
+              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs text-amber-700 dark:text-amber-300 break-words">
                 {nuclide.logHalfLife > 9 ? 'Stable or very long-lived' :
                  nuclide.logHalfLife > 0 ? 'Radioactive' :
                  'Short-lived radioactive'}
