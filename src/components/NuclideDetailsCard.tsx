@@ -149,7 +149,7 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
   if (!nuclide) return null
 
   return (
-    <div className="card p-6 animate-fade-in overflow-hidden max-w-full">
+    <div className="card p-6 animate-fade-in max-w-full">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -297,8 +297,8 @@ export default function NuclideDetailsCard({ nuclide, onClose }: NuclideDetailsC
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">
               Radioactive Decay
             </h3>
-            <div className="-mx-6 sm:mx-0 overflow-x-auto">
-              <table className="min-w-full text-xs border border-gray-200 dark:border-gray-700">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border border-gray-200 dark:border-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="pl-6 pr-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Decay Mode</th>
