@@ -178,4 +178,54 @@ test.describe('Mobile Navigation', () => {
     await navigateToPage(page, 'Home');
     await expect(page).toHaveURL('/');
   });
+
+  test('should not scroll entire sidebar container on mobile', async ({ page }) => {
+    // Open mobile menu
+    const menuButton = page.getByRole('button', { name: /open menu/i });
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+
+    // Wait for sidebar to open
+    await page.waitForTimeout(300);
+
+    // Get the sidebar container (the one with flex flex-col)
+    const sidebar = page.locator('div.fixed.inset-y-0.left-0').first();
+    await expect(sidebar).toBeVisible();
+
+    // Verify the sidebar container has overflow-hidden
+    const hasOverflowHidden = await sidebar.evaluate(el => {
+      const styles = window.getComputedStyle(el);
+      return styles.overflow === 'hidden' || styles.overflowY === 'hidden';
+    });
+    expect(hasOverflowHidden).toBe(true);
+
+    // Verify the nav section (not the container) has overflow-y-auto
+    const nav = sidebar.locator('nav').first();
+    const navHasScroll = await nav.evaluate(el => {
+      const styles = window.getComputedStyle(el);
+      return styles.overflowY === 'auto' || styles.overflow === 'auto';
+    });
+    expect(navHasScroll).toBe(true);
+
+    // Get bounding boxes
+    const sidebarBox = await sidebar.boundingBox();
+    const viewportSize = page.viewportSize();
+
+    if (sidebarBox && viewportSize) {
+      // Sidebar should be constrained to viewport height
+      // Allow 1px tolerance for sub-pixel rendering
+      expect(sidebarBox.height).toBeLessThanOrEqual(viewportSize.height + 1);
+
+      // Sidebar should start at top of viewport
+      expect(sidebarBox.y).toBeLessThanOrEqual(1);
+    }
+
+    // Verify the sidebar container's scrollHeight equals clientHeight
+    // (meaning it doesn't scroll because overflow is hidden)
+    const sidebarScrollable = await sidebar.evaluate(el => {
+      return el.scrollHeight > el.clientHeight;
+    });
+    // The sidebar container itself should NOT be scrollable
+    expect(sidebarScrollable).toBe(false);
+  });
 });
