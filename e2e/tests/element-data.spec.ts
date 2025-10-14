@@ -683,6 +683,14 @@ test.describe('Element Data - Mobile', () => {
     // Table should be at least as wide as container, and may be scrollable
     // scrollWidth >= clientWidth (equal if not scrollable, greater if scrollable)
     expect(scrollWidth).toBeGreaterThanOrEqual(clientWidth);
+
+    // CRITICAL: Verify the entire page doesn't cause horizontal scrolling
+    const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
+    const bodyClientWidth = await page.evaluate(() => document.body.clientWidth);
+
+    // The page itself should not be wider than the viewport
+    // Allow 1px tolerance for sub-pixel rendering
+    expect(bodyScrollWidth).toBeLessThanOrEqual(bodyClientWidth + 1);
   });
 
   test('should show hamburger menu in tabs only when stuck on mobile', async ({ page }) => {
