@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Radiation, ArrowRight } from 'lucide-react'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { useLayout } from '../contexts/LayoutContext'
-import type { Element, Nuclide, AtomicRadiiData, RadioactiveNuclideData, DisplayNuclide } from '../types'
+import type { Element, Nuclide, AtomicRadiiData, RadioactiveNuclideData, DisplayNuclide, RadioNuclideListItem } from '../types'
 import PeriodicTable from '../components/PeriodicTable'
 import NuclideDetailsCard from '../components/NuclideDetailsCard'
 import RadioactiveNuclideCard from '../components/RadioactiveNuclideCard'
@@ -1013,11 +1013,16 @@ export default function ShowElementData() {
   // Handler to update nuclide selection and URL
   const handleNuclideClick = (displayNuclide: DisplayNuclide) => {
     const newParams = new URLSearchParams(searchParams)
-    const nuclideData = displayNuclide.data
+    let nuclideData: RadioNuclideListItem | Nuclide
 
     if (displayNuclide.type === 'full') {
-      // Full nuclide - set directly and update URL
-      setSelectedNuclide(nuclideData)
+      const fullNuclide = displayNuclide.data
+      setSelectedNuclide(fullNuclide)
+      nuclideData = fullNuclide
+    } else {
+      const radioactiveOnly = displayNuclide.data
+      setSelectedNuclide(null)
+      nuclideData = radioactiveOnly
     }
 
     newParams.set('Z', nuclideData.Z.toString())
