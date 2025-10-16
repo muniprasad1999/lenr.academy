@@ -691,7 +691,7 @@ export default function TwoToTwoQuery() {
                   </div>
                 ) : results.length <= SMALL_RESULT_THRESHOLD ? (
                   <div style={{ paddingRight: twoTwoHeaderPadding }}>
-                    {results.map((reaction, index) => {
+                    {results.map((reaction) => {
                         const activeNuclide = pinnedNuclide ? highlightedNuclide : highlightedNuclide
                         const activeElement = pinnedElement ? highlightedElement : highlightedElement
                         const nuclideMatch = !activeNuclide || reactionContainsNuclide(reaction, activeNuclide)
