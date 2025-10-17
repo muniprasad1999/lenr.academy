@@ -683,7 +683,7 @@ export default function TwoToTwoQuery() {
         </div>
 
         {/* SQL Preview with Reset Filters Button */}
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
+        <div className="px-4 bg-gray-50 dark:bg-gray-800 rounded-md">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
             <div className="flex items-center gap-2">
               <Info className="w-4 h-4 text-gray-500 dark:text-gray-400" />
