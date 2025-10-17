@@ -169,6 +169,13 @@ test.describe('Privacy Preferences Page', () => {
     await acceptMeteredWarningIfPresent(page);
     await waitForDatabaseReady(page);
 
+    // Skip test if running on dev server (analytics disabled in development)
+    const url = page.url()
+    const isDev = url.includes(':5173')
+    if (isDev) {
+      test.skip(true, 'Analytics loading is disabled in development mode')
+    }
+
     // Verify Umami script is NOT loaded yet
     let hasUmamiScript = await page.evaluate(() => {
       const scripts = Array.from(document.querySelectorAll('script'));
@@ -363,6 +370,13 @@ test.describe('Privacy Banner - Dynamic Script Loading', () => {
     await page.goto('/');
     await acceptMeteredWarningIfPresent(page);
     await waitForDatabaseReady(page);
+
+    // Skip test if running on dev server (analytics disabled in development)
+    const url = page.url()
+    const isDev = url.includes(':5173')
+    if (isDev) {
+      test.skip(true, 'Analytics loading is disabled in development mode')
+    }
 
     // Banner should be visible
     const banner = page.locator('[data-testid="analytics-banner"]');
