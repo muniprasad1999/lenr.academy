@@ -13,6 +13,13 @@ const UMAMI_WEBSITE_ID = '916d0566-989b-47e1-9882-b06de40a1c95'
  */
 export function loadUmamiScript(): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Don't load analytics in development or CI environments
+    if (import.meta.env.MODE === 'development' || import.meta.env.VITE_CI === 'true') {
+      console.log('[Analytics] Skipping analytics load (development/CI environment)')
+      resolve()
+      return
+    }
+
     // Check if script is already loaded
     const existingScript = document.querySelector(`script[src="${UMAMI_SCRIPT_SRC}"]`)
     if (existingScript) {

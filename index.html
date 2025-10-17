@@ -21,24 +21,8 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
 
     <!-- Umami Analytics - Privacy-friendly analytics -->
-    <!-- Only loads if user has accepted analytics AND not in development mode -->
-    <script type="module">
-      (function() {
-        // Don't load analytics in development mode
-        if (import.meta.env.MODE === 'development') {
-          return;
-        }
-
-        var consent = localStorage.getItem('lenr-analytics-consent');
-        if (consent === 'accepted') {
-          var script = document.createElement('script');
-          script.defer = true;
-          script.src = 'https://cloud.umami.is/script.js';
-          script.setAttribute('data-website-id', '916d0566-989b-47e1-9882-b06de40a1c95');
-          document.head.appendChild(script);
-        }
-      })();
-    </script>
+    <!-- Analytics are loaded dynamically by src/utils/analytics.ts when user consents -->
+    <!-- Automatically disabled in development and CI environments (VITE_CI=true) -->
   </head>
   <body>
     <div id="root"></div>
