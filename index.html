@@ -21,9 +21,14 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
 
     <!-- Umami Analytics - Privacy-friendly analytics -->
-    <!-- Only loads if user has accepted analytics -->
-    <script>
+    <!-- Only loads if user has accepted analytics AND not in development mode -->
+    <script type="module">
       (function() {
+        // Don't load analytics in development mode
+        if (import.meta.env.MODE === 'development') {
+          return;
+        }
+
         var consent = localStorage.getItem('lenr-analytics-consent');
         if (consent === 'accepted') {
           var script = document.createElement('script');

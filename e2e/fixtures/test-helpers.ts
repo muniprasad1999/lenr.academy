@@ -69,7 +69,7 @@ export async function setTheme(page: Page, theme: 'light' | 'dark') {
  */
 export async function acceptPrivacyConsent(page: Page) {
   await page.context().addInitScript(() => {
-    localStorage.setItem('lenr-analytics-consent', 'true');
+    localStorage.setItem('lenr-analytics-consent', 'accepted');
     // Disable changelog auto-launch (tests will open it explicitly if needed)
     localStorage.setItem('lenr-changelog-disable-auto', 'true');
   });
