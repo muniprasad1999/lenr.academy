@@ -13,7 +13,7 @@ A modern web application for exploring Low Energy Nuclear Reactions (LENR) and c
 | 🧪 **Beta** | [beta.lenr.academy](https://beta.lenr.academy) - Latest `main` with passing CI |
 | 📋 **Project Board** | [View active development](https://github.com/orgs/Episk-pos/projects/1) |
 | 💬 **Discussions** | [Community & support](https://github.com/Episk-pos/lenr.academy/discussions) |
-| 📊 **Analytics** | [Public usage statistics](https://cloud.umami.is/share/JGkYeKU60K9D1t4U) |
+| 📊 **Analytics** | [Public usage statistics](https://cloud.umami.is/analytics/eu/share/JGkYeKU60K9D1t4U?hostname=neq.localhost) |
 
 ## About
 
