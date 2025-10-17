@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import App from './App.tsx'
 import './index.css'
+import { loadUmamiScript } from './utils/analytics'
 
 // Initialize Sentry for error tracking
 // Only initialize if DSN is provided (production environment) AND user hasn't explicitly declined
@@ -78,6 +79,14 @@ if (import.meta.env.VITE_SENTRY_DSN && errorReportingConsent !== 'declined') {
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0.1,
   });
+}
+
+// Initialize analytics if user has consented
+const analyticsConsent = localStorage.getItem('lenr-analytics-consent')
+if (analyticsConsent === 'accepted') {
+  loadUmamiScript().catch(error => {
+    console.error('[Analytics] Failed to load on startup:', error)
+  })
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
