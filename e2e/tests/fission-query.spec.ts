@@ -22,8 +22,8 @@ test.describe('Fission Query Page', () => {
   });
 
   test('should select element and execute fission query', async ({ page }) => {
-    // Click the input element selector dropdown to open it
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    // Click the input element selector dropdown to open it (now shows "Any" with no defaults)
+    await page.getByRole('button', { name: /Any/i }).first().click();
 
     // Wait for periodic table to appear and select Nickel
     const ni = page.getByRole('button', { name: /^28\s+Ni$/i }).first();
@@ -43,7 +43,7 @@ test.describe('Fission Query Page', () => {
 
   test('should filter by output elements', async ({ page }) => {
     // Select input element
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    await page.getByRole('button', { name: /Any/i }).first().click();
     const ni = page.getByRole('button', { name: /^28\s+Ni$/i }).first();
     await ni.waitFor({ state: 'visible', timeout: 5000 });
     await ni.click();
@@ -57,7 +57,7 @@ test.describe('Fission Query Page', () => {
 
   test('should filter by energy range', async ({ page }) => {
     // Select element - Iron
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    await page.getByRole('button', { name: /Any/i }).first().click();
     const fe = page.getByRole('button', { name: /^26\s+Fe$/i }).first();
     await fe.waitFor({ state: 'visible', timeout: 5000 });
     await fe.click();
@@ -81,7 +81,7 @@ test.describe('Fission Query Page', () => {
 
   test('should display fission reaction details', async ({ page }) => {
     // Execute a query - select Silver (Ag has fission reactions)
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    await page.getByRole('button', { name: /Any/i }).first().click();
     const ag = page.getByRole('button', { name: /^47\s+Ag$/i }).first();
     await ag.waitFor({ state: 'visible', timeout: 5000 });
     await ag.click();
@@ -102,7 +102,7 @@ test.describe('Fission Query Page', () => {
 
   test('should export fission results', async ({ page }) => {
     // Execute query - select Silver (Ag has fission reactions)
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    await page.getByRole('button', { name: /Any/i }).first().click();
     const ag = page.getByRole('button', { name: /^47\s+Ag$/i }).first();
     await ag.waitFor({ state: 'visible', timeout: 5000 });
     await ag.click();
@@ -125,7 +125,7 @@ test.describe('Fission Query Page', () => {
 
   test('should handle no results for invalid combinations', async ({ page }) => {
     // Select Hydrogen which likely has no fission reactions
-    await page.getByRole('button', { name: /1 selected.*Zr/i }).click();
+    await page.getByRole('button', { name: /Any/i }).first().click();
     const h = page.getByRole('button', { name: /^1\s+H$/i }).first();
     await h.waitFor({ state: 'visible', timeout: 5000 });
     await h.click();
@@ -157,7 +157,14 @@ test.describe('Fission Query Page', () => {
   });
 
   test('should enforce mutually exclusive element and nuclide pinning', async ({ page }) => {
-    // Wait for default query results to load (Zr fission)
+    // Select Zr to get query results
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+    await page.keyboard.press('Escape');
+
+    // Wait for query results to load (Zr fission)
     await waitForReactionResults(page, 'fission');
 
     // Expand the heatmap to access the periodic table
@@ -201,8 +208,24 @@ test.describe('Fission Query Page', () => {
   });
 
   test('should keep element pinned when selecting nuclide from same element', async ({ page }) => {
-    // Wait for default query results to load (Zr fission)
+    // Select Zr to get query results (Zr has fission reactions, produces Ca as output)
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+
+    // Close selector dropdown by clicking outside
+    const pageHeader = page.locator('h1, h2').first();
+    await pageHeader.click({ force: true });
+    await page.waitForTimeout(200);
+
+    // Wait for query results to load (Zr fission)
     await waitForReactionResults(page, 'fission');
+
+    // Scroll down to the results section to ensure heatmap is visible
+    const resultsRegion = page.getByRole('region', { name: /fission reaction results/i });
+    await resultsRegion.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
 
     // Expand the heatmap to access the periodic table
     const heatmapToggle = page.locator('button[title*="periodic table"]').first();
@@ -210,17 +233,23 @@ test.describe('Fission Query Page', () => {
     const isHeatmapExpanded = await heatmapToggle.getAttribute('title').then(t => t?.includes('Collapse'));
     if (!isHeatmapExpanded) {
       await heatmapToggle.click();
-      await page.waitForTimeout(500); // Wait for expansion animation
+      await page.waitForTimeout(1500); // Wait for expansion animation (longer like heatmap-metrics test)
     }
 
-    // Pin Calcium element
-    const caButton = page.getByRole('button', { name: /^20\s+Ca$/ }).first();
-    await caButton.scrollIntoViewIfNeeded();
-    await caButton.click();
-    await page.waitForTimeout(500);
+    // Pin Calcium element in the heatmap
+    // Wait for periodic table to render, then get the last Ca button (heatmap one)
+    await page.waitForTimeout(300);
+    const allCaButtons = page.getByRole('button', { name: /^20\s+Ca$/ });
+    const caButtonCount = await allCaButtons.count();
+    // If there are multiple Ca buttons, the heatmap one is the last one
+    const caButtonHeatmap = caButtonCount > 1 ? allCaButtons.last() : allCaButtons.first();
+    await caButtonHeatmap.waitFor({ state: 'visible', timeout: 5000 });
+    await caButtonHeatmap.scrollIntoViewIfNeeded();
+    await caButtonHeatmap.click();
+    await page.waitForTimeout(300);
 
     // Verify Calcium has ring indicator styling
-    await expect(caButton).toHaveClass(/ring-2.*ring-blue/);
+    await expect(caButtonHeatmap).toHaveClass(/ring-2.*ring-blue/);
 
     // Verify nuclides are filtered by Calcium (element pinning is working)
     await expect(page.getByText(/Nuclides of Ca in Results/)).toBeVisible();
@@ -234,7 +263,7 @@ test.describe('Fission Query Page', () => {
     await expect(caNuclideCard).toHaveClass(/ring-2.*ring-blue-400/);
 
     // Verify Calcium element is STILL pinned (element should remain pinned when selecting its own nuclide)
-    await expect(caButton).toHaveClass(/ring-2.*ring-blue/);
+    await expect(caButtonHeatmap).toHaveClass(/ring-2.*ring-blue/);
 
     // Verify nuclides list is STILL filtered by Calcium (should not revert to showing all nuclides)
     await expect(page.getByText(/Nuclides of Ca in Results/)).toBeVisible();
@@ -247,15 +276,31 @@ test.describe('Fission Query Page', () => {
     await expect(caNuclideCard).not.toHaveClass(/ring-2.*ring-blue-400/);
 
     // Verify Calcium element is ALSO unpinned (unpinning nuclide should unpin element)
-    await expect(caButton).not.toHaveClass(/ring-2.*ring-blue/);
+    await expect(caButtonHeatmap).not.toHaveClass(/ring-2.*ring-blue/);
 
     // Verify nuclides list reverted to showing all nuclides
     await expect(page.getByText(/Nuclides Appearing in Results/)).toBeVisible();
   });
 
   test('should allow element pinning via periodic table', async ({ page }) => {
-    // Wait for default query results to load (Zr fission)
+    // Select Zr to get query results (Zr has fission reactions, produces Ca as output)
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+
+    // Close selector dropdown by clicking outside
+    const pageHeader = page.locator('h1, h2').first();
+    await pageHeader.click({ force: true });
+    await page.waitForTimeout(200);
+
+    // Wait for query results to load (Zr fission)
     await waitForReactionResults(page, 'fission');
+
+    // Scroll down to the results section to ensure heatmap is visible
+    const resultsRegion = page.getByRole('region', { name: /fission reaction results/i });
+    await resultsRegion.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
 
     // Expand the heatmap to access the periodic table
     const heatmapToggle = page.locator('button[title*="periodic table"]').first();
@@ -263,24 +308,37 @@ test.describe('Fission Query Page', () => {
     const isHeatmapExpanded = await heatmapToggle.getAttribute('title').then(t => t?.includes('Collapse'));
     if (!isHeatmapExpanded) {
       await heatmapToggle.click();
-      await page.waitForTimeout(500); // Wait for expansion animation
+      await page.waitForTimeout(300);
     }
 
-    // Click an element in the heatmap (e.g., Calcium)
-    const caButton = page.getByRole('button', { name: /^20\s+Ca$/ }).first();
-    await caButton.scrollIntoViewIfNeeded();
-    await caButton.click();
-    await page.waitForTimeout(500); // Wait for element details to load
+    // Find Ca button in the heatmap's periodic table and click it to pin
+    // Wait for periodic table to render, then get the last Ca button (heatmap one)
+    await page.waitForTimeout(300);
+    const allCaButtons = page.getByRole('button', { name: /^20\s+Ca$/ });
+    const caButtonCount = await allCaButtons.count();
+    // If there are multiple Ca buttons, the heatmap one is the last one
+    const caButtonHeatmap = caButtonCount > 1 ? allCaButtons.last() : allCaButtons.first();
+    await caButtonHeatmap.waitFor({ state: 'visible', timeout: 5000 });
+    await caButtonHeatmap.scrollIntoViewIfNeeded();
+    await caButtonHeatmap.click();
+    await page.waitForTimeout(300);
 
     // Verify Calcium has ring indicator styling
-    await expect(caButton).toHaveClass(/ring-2.*ring-blue/);
+    await expect(caButtonHeatmap).toHaveClass(/ring-2.*ring-blue/);
 
     // Verify nuclides are filtered by Calcium (element pinning is working)
     await expect(page.getByText(/Nuclides of Ca in Results/)).toBeVisible();
   });
 
   test('should allow nuclide pinning and show details', async ({ page }) => {
-    // Wait for default query results to load
+    // Select Zr to get query results
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+    await page.keyboard.press('Escape');
+
+    // Wait for query results to load
     await waitForReactionResults(page, 'fission');
 
     // Click a nuclide card from "Nuclides Appearing in Results"
@@ -360,7 +418,14 @@ test.describe('Fission Query Page', () => {
   });
 
   test('should unpin nuclide when pinning a different element', async ({ page }) => {
-    // Wait for default query results to load (Zr fission)
+    // Select Zr to get query results
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+    await page.keyboard.press('Escape');
+
+    // Wait for query results to load (Zr fission)
     await waitForReactionResults(page, 'fission');
 
     // Scroll to and wait for nuclides section to be visible
@@ -405,7 +470,14 @@ test.describe('Fission Query Page', () => {
   });
 
   test('should have clickable links to element-data page for nuclides in results table', async ({ page }) => {
-    // Wait for default query results to load
+    // Select Zr to get query results
+    await page.getByRole('button', { name: /Any/i }).first().click();
+    const zr = page.getByRole('button', { name: /^40\s+Zr$/i }).first();
+    await zr.waitFor({ state: 'visible', timeout: 5000 });
+    await zr.click();
+    await page.keyboard.press('Escape');
+
+    // Wait for query results to load
     await page.waitForFunction(
       () => document.querySelector('[role="region"][aria-label="Fission reaction results"] div[class*="grid"][class*="border-b"]') !== null,
       { timeout: 10000 }
