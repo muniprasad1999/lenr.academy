@@ -1391,7 +1391,7 @@ export default function FusionQuery() {
               {selectedElementDetails && (
                 <ElementDetailsCard
                   element={selectedElementDetails}
-                  radii={selectedElementRadii}
+                  atomicRadii={selectedElementRadii}
                   onClose={() => {
                     setPinnedNuclide(false)
                     setHighlightedNuclide(null)

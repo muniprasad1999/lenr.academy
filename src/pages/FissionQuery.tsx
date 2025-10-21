@@ -1234,7 +1234,7 @@ export default function FissionQuery() {
               {selectedElementDetails && selectedElementRadii && (
                 <ElementDetailsCard
                   element={selectedElementDetails}
-                  radii={selectedElementRadii}
+                  atomicRadii={selectedElementRadii}
                   onClose={() => {
                     setPinnedNuclide(false)
                     setHighlightedNuclide(null)
