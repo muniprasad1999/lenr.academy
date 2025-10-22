@@ -317,25 +317,27 @@ test.describe('Fusion Query Page', () => {
   });
 
   test('should limit number of results', async ({ page }) => {
-    // Set a specific limit
-    const limitInput = page.getByLabel(/limit|max.*results/i);
+    // Expand filters section first
+    await page.getByRole('button', { name: 'Expand filters' }).click();
+    
+    // Set a specific limit using the dropdown
+    await page.getByTestId('limit-selector-button').click();
+    
+    // Select 100 from the dropdown
+    await page.getByTestId('limit-option-100').click();
 
-    if (await limitInput.isVisible().catch(() => false)) {
-      await limitInput.fill('10');
+    // Query auto-executes when limit changes - wait for results
+    await page.waitForFunction(
+      () => document.querySelector('[role="region"][aria-label="Fusion reaction results"] div[class*="grid"][class*="border-b"]') !== null,
+      { timeout: 10000 }
+    );
 
-      // Query auto-executes when limit changes - wait for results
-      await page.waitForFunction(
-        () => document.querySelector('[role="region"][aria-label="Fusion reaction results"] div[class*="grid"][class*="border-b"]') !== null,
-        { timeout: 10000 }
-      );
+    // Count data rows (exclude header rows)
+    const rows = page.getByRole('region', { name: /Fusion reaction results/i }).locator('div[class*="grid"][class*="border-b"]:not([class*="bg-gray-50"]):not([class*="bg-gray-100"])');
+    const count = await rows.count();
 
-      // Count rows
-      const rows = page.getByRole('region', { name: /Fusion reaction results/i }).locator('div[class*="grid"][class*="border-b"]');
-      const count = await rows.count();
-
-      // Should have at most 10 results (or fewer if query returns less)
-      expect(count).toBeLessThanOrEqual(10);
-    }
+    // Should have at most 100 results (or fewer if query returns less)
+    expect(count).toBeLessThanOrEqual(100);
   });
 
   test('should handle mutually exclusive element and nuclide pinning', async ({ page }) => {
