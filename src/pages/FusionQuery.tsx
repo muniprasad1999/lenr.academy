@@ -3,6 +3,7 @@ import { Download, Info, Loader2, Eye, EyeOff, Radiation, ChevronDown } from 'lu
 import { useSearchParams, Link } from 'react-router-dom'
 import type { FusionReaction, QueryFilter, Nuclide, Element, HeatmapMode, HeatmapMetrics, AtomicRadiiData } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
+import { useQueryState } from '../contexts/QueryStateContext'
 import { queryFusion, getAllElements, getNuclideBySymbol, getElementBySymbol, getAtomicRadii, getFusionSqlPreview, calculateHeatmapMetrics } from '../services/queryService'
 import ElementDetailsCard from '../components/ElementDetailsCard'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
@@ -24,29 +25,23 @@ const SCROLLBAR_COMPENSATION = 16
 export default function FusionQuery() {
   const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { getFusionState, updateFusionState } = useQueryState()
   const [elements, setElements] = useState<Element[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
   // Helper to check if any URL parameters exist
-  const hasAnyUrlParams = () => searchParams.toString().length > 0
-
-  // Parse URL parameters or use defaults (only if no params exist)
-  const getInitialElement1 = () => {
-    const param = searchParams.get('e1')
-    if (param) return param.split(',')
-    return hasAnyUrlParams() ? [] : DEFAULT_ELEMENT1
-  }
+  // Default element selections based on URL params
 
   const getInitialElement2 = () => {
     const param = searchParams.get('e2')
     if (param) return param.split(',')
-    return hasAnyUrlParams() ? [] : DEFAULT_ELEMENT2
+    return searchParams.toString().length > 0 ? [] : DEFAULT_ELEMENT2
   }
 
   const getInitialOutputElement = () => {
     const param = searchParams.get('e')
     if (param) return param.split(',')
-    return hasAnyUrlParams() ? [] : DEFAULT_OUTPUT_ELEMENT
+    return searchParams.toString().length > 0 ? [] : DEFAULT_OUTPUT_ELEMENT
   }
 
   const getInitialMinMeV = () => {
@@ -68,6 +63,12 @@ export default function FusionQuery() {
     const param = searchParams.get('limit')
     // Support limit=0 for unlimited, otherwise default to DEFAULT_LIMIT
     return param !== null ? parseInt(param) : DEFAULT_LIMIT
+  }
+
+  const getInitialElement1 = () => {
+    const param = searchParams.get('e1')
+    if (param) return param.split(',')
+    return searchParams.toString().length > 0 ? [] : DEFAULT_ELEMENT1
   }
 
   const [filter, setFilter] = useState<QueryFilter>({
@@ -149,6 +150,9 @@ export default function FusionQuery() {
 
   // Filters visibility state (collapsed by default)
   const [showFilters, setShowFilters] = useState(false)
+
+  // Add a flag to track if we've restored from localStorage
+  const [hasRestoredFromContext, setHasRestoredFromContext] = useState(false)
 
   const queryFilter = useMemo<QueryFilter>(() => {
     const filterWithSelections: QueryFilter = {
@@ -265,8 +269,42 @@ export default function FusionQuery() {
       const allElements = getAllElements(db)
       setElements(allElements)
       setIsInitialized(true)
+
+      // Restore state from context if no URL params exist
+      if (searchParams.toString().length === 0 && !hasRestoredFromContext) {
+        const savedState = getFusionState()
+        if (savedState) {
+          // Restore selections
+          if (savedState.selectedElement1) setSelectedElement1(savedState.selectedElement1)
+          if (savedState.selectedElement2) setSelectedElement2(savedState.selectedElement2)
+          if (savedState.selectedOutputElement) setSelectedOutputElement(savedState.selectedOutputElement)
+
+          // Restore filter
+          if (savedState.filter) {
+            setFilter(prev => ({
+              ...prev,
+              ...savedState.filter,
+              minMeV: savedState.minMeV ?? prev.minMeV,
+              maxMeV: savedState.maxMeV ?? prev.maxMeV,
+              neutrinoTypes: savedState.neutrino ? [savedState.neutrino] : prev.neutrinoTypes,
+              limit: savedState.limit ?? prev.limit
+            }))
+          }
+
+          // Restore visualization state
+          if (savedState.visualization) {
+            if (savedState.visualization.showHeatmap !== undefined) setShowHeatmap(savedState.visualization.showHeatmap)
+            if (savedState.visualization.heatmapMode) setHeatmapMode(savedState.visualization.heatmapMode)
+            if (savedState.visualization.userTableHeight) setUserTableHeight(savedState.visualization.userTableHeight)
+          }
+
+          // Restore UI preferences
+          if (savedState.showBosonFermion !== undefined) setShowBosonFermion(savedState.showBosonFermion)
+        }
+        setHasRestoredFromContext(true)
+      }
     }
-  }, [db])
+  }, [db, searchParams, hasRestoredFromContext])
 
   // Initialize pinned element/nuclide state from URL params (after results are loaded)
   // This effect should ONLY run once when results first load, not on every URL change
@@ -312,6 +350,59 @@ export default function FusionQuery() {
   useEffect(() => {
     localStorage.setItem('showBosonFermion', JSON.stringify(showBosonFermion))
   }, [showBosonFermion])
+
+  // Save state changes to QueryStateContext
+  useEffect(() => {
+    // Don't save if we're still initializing
+    if (!isInitialized || !hasRestoredFromContext) return
+
+    // Save current state to context
+    updateFusionState({
+      filter,
+      selectedElement1,
+      selectedElement2,
+      selectedOutputElement,
+      minMeV: filter.minMeV,
+      maxMeV: filter.maxMeV,
+      neutrino: filter.neutrinoTypes?.[0] as any,
+      limit: filter.limit,
+      showBosonFermion,
+      visualization: {
+        pinnedNuclide: pinnedNuclide && highlightedNuclide ?
+          (() => {
+            const [E, A] = highlightedNuclide.split('-')
+            return { Z: 0, A: parseInt(A), E }
+          })() : null,
+        pinnedElement: pinnedElement && highlightedElement ?
+          { Z: 0, E: highlightedElement } : null,
+        highlightedNuclide: !pinnedNuclide && highlightedNuclide ?
+          (() => {
+            const [E, A] = highlightedNuclide.split('-')
+            return { Z: 0, A: parseInt(A), E }
+          })() : null,
+        highlightedElement: !pinnedElement && highlightedElement ?
+          { Z: 0, E: highlightedElement } : null,
+        showHeatmap,
+        heatmapMode,
+        userTableHeight: userTableHeight ?? undefined
+      }
+    })
+  }, [
+    isInitialized,
+    filter,
+    selectedElement1,
+    selectedElement2,
+    selectedOutputElement,
+    showBosonFermion,
+    pinnedNuclide,
+    pinnedElement,
+    highlightedNuclide,
+    highlightedElement,
+    showHeatmap,
+    heatmapMode,
+    userTableHeight,
+    updateFusionState
+  ])
 
   // Fetch nuclide or element details when pinned
   useEffect(() => {
@@ -538,6 +629,7 @@ export default function FusionQuery() {
             availableElements={elements}
             selectedElements={selectedElement1}
             onSelectionChange={setSelectedElement1}
+            testId="fusion-input-element-1-selector"
           />
 
           {/* Input Element 2 Selection (E2) */}
@@ -547,6 +639,7 @@ export default function FusionQuery() {
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
             align="center"
+            testId="fusion-input-element-2-selector"
           />
 
           {/* Output Element Selection (E) */}
@@ -556,6 +649,7 @@ export default function FusionQuery() {
             selectedElements={selectedOutputElement}
             onSelectionChange={setSelectedOutputElement}
             align="right"
+            testId="fusion-output-element-selector"
           />
         </div>
 

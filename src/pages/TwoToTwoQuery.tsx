@@ -3,6 +3,7 @@ import { Download, Info, Loader2, Eye, EyeOff, Radiation, ChevronDown } from 'lu
 import { useSearchParams, Link } from 'react-router-dom'
 import type { TwoToTwoReaction, QueryFilter, Element, Nuclide, HeatmapMode, HeatmapMetrics, AtomicRadiiData } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
+import { useQueryState } from '../contexts/QueryStateContext'
 import { queryTwoToTwo, getAllElements, getNuclideBySymbol, getElementBySymbol, getAtomicRadii, calculateHeatmapMetrics } from '../services/queryService'
 import PeriodicTableSelector from '../components/PeriodicTableSelector'
 import PeriodicTable from '../components/PeriodicTable'
@@ -25,8 +26,10 @@ const SMALL_RESULT_THRESHOLD = 12
 export default function TwoToTwoQuery() {
   const { db, isLoading: dbLoading, error: dbError, downloadProgress } = useDatabase()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { getTwoToTwoState, updateTwoToTwoState } = useQueryState()
   const [elements, setElements] = useState<Element[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
+  const [hasRestoredFromContext, setHasRestoredFromContext] = useState(false)
 
   // Helper to check if any URL parameters exist
   const hasAnyUrlParams = () => searchParams.toString().length > 0
@@ -258,14 +261,60 @@ export default function TwoToTwoQuery() {
     return !showBosonFermion && twoTwoUsesScrollbar ? SCROLLBAR_COMPENSATION : 0
   }, [showBosonFermion, twoTwoUsesScrollbar])
 
-  // Load elements when database is ready
+  // Load elements when database is ready and restore state from context if no URL params
   useEffect(() => {
     if (db) {
       const allElements = getAllElements(db)
       setElements(allElements)
       setIsInitialized(true)
+
+      // Restore state from context only if no URL params exist and we haven't restored yet
+      if (!hasAnyUrlParams() && !hasRestoredFromContext) {
+        const savedState = getTwoToTwoState()
+        if (savedState) {
+          // Restore selections
+          setSelectedElement1(savedState.selectedElement1 || [])
+          setSelectedElement2(savedState.selectedElement2 || [])
+          setSelectedOutputElement3(savedState.selectedOutputElement3 || [])
+          setSelectedOutputElement4(savedState.selectedOutputElement4 || [])
+
+          // Restore filter state
+          setFilter({
+            elements: savedState.filter?.elements || [],
+            element1List: savedState.filter?.element1List,
+            element2List: savedState.filter?.element2List,
+            outputElement3List: savedState.filter?.outputElement3List,
+            outputElement4List: savedState.filter?.outputElement4List,
+            minMeV: savedState.minMeV,
+            maxMeV: savedState.maxMeV,
+            neutrinoTypes: savedState.neutrino ? [savedState.neutrino] : savedState.filter?.neutrinoTypes || DEFAULT_NEUTRINO_TYPES as any[],
+            limit: savedState.limit ?? DEFAULT_LIMIT,
+            orderBy: savedState.filter?.orderBy || 'MeV',
+            orderDirection: savedState.filter?.orderDirection || 'desc'
+          })
+
+          // Restore visualization state
+          if (savedState.visualization) {
+            if (savedState.visualization.pinnedNuclide) {
+              const n = savedState.visualization.pinnedNuclide
+              setHighlightedNuclide(`${n.E}-${n.A}`)
+              setPinnedNuclide(true)
+            } else if (savedState.visualization.pinnedElement) {
+              setHighlightedElement(savedState.visualization.pinnedElement.E)
+              setPinnedElement(true)
+            }
+            setShowHeatmap(savedState.visualization.showHeatmap ?? true)
+            setHeatmapMode(savedState.visualization.heatmapMode ?? 'frequency')
+            setUserTableHeight(savedState.visualization.userTableHeight ?? null)
+          }
+
+          // Restore UI state
+          setShowBosonFermion(savedState.showBosonFermion ?? false)
+        }
+        setHasRestoredFromContext(true)
+      }
     }
-  }, [db])
+  }, [db, hasAnyUrlParams, hasRestoredFromContext])
 
   // Save B/F toggle to localStorage (separate key for TwoToTwo)
   useEffect(() => {
@@ -410,6 +459,60 @@ export default function TwoToTwoQuery() {
     }
   }, [db, selectedElement1, selectedElement2, selectedOutputElement3, selectedOutputElement4, filter.minMeV, filter.maxMeV, filter.neutrinoTypes, filter.limit, isInitialized])
 
+  // Save state to context whenever it changes (for persistence across navigation)
+  useEffect(() => {
+    if (!isInitialized || !db || !hasRestoredFromContext) return
+
+    // Prepare visualization state with proper null conversion
+    const visualizationState = {
+      pinnedNuclide: pinnedNuclide && highlightedNuclide
+        ? (() => {
+            const [E, A] = highlightedNuclide.split('-')
+            return { Z: 0, A: parseInt(A), E }  // Z will be populated from db if needed
+          })()
+        : null,
+      pinnedElement: pinnedElement && highlightedElement
+        ? { Z: 0, E: highlightedElement }  // Z will be populated from db if needed
+        : null,
+      highlightedNuclide: null,  // Not used but kept for consistency
+      highlightedElement: null,  // Not used but kept for consistency
+      showHeatmap,
+      heatmapMode,
+      userTableHeight: userTableHeight ?? undefined
+    }
+
+    updateTwoToTwoState({
+      filter,
+      selectedElement1,
+      selectedElement2,
+      selectedOutputElement3,
+      selectedOutputElement4,
+      minMeV: filter.minMeV,
+      maxMeV: filter.maxMeV,
+      neutrino: filter.neutrinoTypes?.length === 1 ? filter.neutrinoTypes[0] as any : undefined,
+      limit: filter.limit,
+      showBosonFermion,
+      visualization: visualizationState
+    })
+  }, [
+    isInitialized,
+    db,
+    selectedElement1,
+    selectedElement2,
+    selectedOutputElement3,
+    selectedOutputElement4,
+    filter,
+    pinnedNuclide,
+    highlightedNuclide,
+    pinnedElement,
+    highlightedElement,
+    showHeatmap,
+    heatmapMode,
+    userTableHeight,
+    showBosonFermion,
+    updateTwoToTwoState
+  ])
+
   const handleQuery = () => {
     if (!db) return
 
@@ -553,6 +656,7 @@ export default function TwoToTwoQuery() {
             availableElements={elements}
             selectedElements={selectedElement1}
             onSelectionChange={setSelectedElement1}
+            testId="twotwo-input-element-1-selector"
           />
 
           {/* Input Element 2 Selection (E2) */}
@@ -562,6 +666,7 @@ export default function TwoToTwoQuery() {
             selectedElements={selectedElement2}
             onSelectionChange={setSelectedElement2}
             align="center"
+            testId="twotwo-input-element-2-selector"
           />
 
           {/* Output Element 1 Selection (E3) */}
@@ -571,6 +676,7 @@ export default function TwoToTwoQuery() {
             selectedElements={selectedOutputElement3}
             onSelectionChange={setSelectedOutputElement3}
             align="center"
+            testId="twotwo-output-element-1-selector"
           />
 
           {/* Output Element 2 Selection (E4) */}
@@ -580,6 +686,7 @@ export default function TwoToTwoQuery() {
             selectedElements={selectedOutputElement4}
             onSelectionChange={setSelectedOutputElement4}
             align="right"
+            testId="twotwo-output-element-2-selector"
           />
         </div>
 
