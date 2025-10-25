@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3-selection';
-import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
+import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
 import { zoom, zoomIdentity, ZoomBehavior } from 'd3-zoom';
 import { drag } from 'd3-drag';
 import { easeCubicOut } from 'd3-ease';
@@ -370,7 +370,7 @@ export default function CascadeNetworkDiagram({
   // Refs
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const simulationRef = useRef<any>(null);
+  const simulationRef = useRef<Simulation<GraphNode, GraphLink> | null>(null);
   const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
   // Media control handlers
@@ -485,11 +485,11 @@ export default function CascadeNetworkDiagram({
       simulationRef.current = simulation;
     } else {
       // Update existing simulation with new data
-      const sim = simulationRef.current;
+      const sim = simulationRef.current!;
 
       // Preserve positions of existing nodes
-      const oldNodes = sim.nodes();
-      const positionMap = new Map(oldNodes.map(n => [n.id, { x: n.x, y: n.y, vx: n.vx, vy: n.vy }]));
+      const oldNodes: GraphNode[] = sim.nodes();
+      const positionMap = new Map(oldNodes.map((n: GraphNode) => [n.id, { x: n.x, y: n.y, vx: n.vx, vy: n.vy }]));
 
       // Transfer positions to new nodes, initialize new nodes at center with random offset
       graphData.nodes.forEach(node => {
@@ -510,7 +510,7 @@ export default function CascadeNetworkDiagram({
       });
 
       sim.nodes(graphData.nodes);
-      sim.force('link').links(graphData.links);
+      (sim.force('link') as any).links(graphData.links);
       sim.alpha(0.05).restart();  // Very gentle restart for smooth loop transitions
     }
 
@@ -537,22 +537,25 @@ export default function CascadeNetworkDiagram({
     // Render edges with transitions
     const edgeElements = edgesGroup
       .selectAll('line')
-      .data(graphData.links, (d: any) => `${d.source.id}-${d.target.id}`)
+      .data(graphData.links, (d: unknown) => {
+  const link = d as GraphLink;
+  return `${(typeof link.source === 'object' ? link.source.id : link.source)}-${(typeof link.target === 'object' ? link.target.id : link.target)}`;
+})
       .join(
         enter => enter.append('line')
-          .attr('stroke', d => getEdgeColor(d.energy))
-          .attr('stroke-width', d => d.width)
+          .attr('stroke', (d: unknown) => getEdgeColor((d as GraphLink).energy))
+          .attr('stroke-width', (d: unknown) => (d as GraphLink).width)
           .attr('stroke-opacity', 0)
-          .attr('marker-end', d => d.isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead)'),
+          .attr('marker-end', (d: unknown) => (d as GraphLink).isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead)'),
         update => update,
         exit => exit.transition().duration(300).attr('stroke-opacity', 0).remove()
       )
       .transition()
       .duration(500)
-      .attr('stroke', d => getEdgeColor(d.energy))
-      .attr('stroke-width', d => d.width)
-      .attr('stroke-opacity', d => d.isActive ? 0.8 : 0.3)
-      .attr('marker-end', d => d.isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead)')
+      .attr('stroke', (d: unknown) => getEdgeColor((d as GraphLink).energy))
+      .attr('stroke-width', (d: unknown) => (d as GraphLink).width)
+      .attr('stroke-opacity', (d: unknown) => (d as GraphLink).isActive ? 0.8 : 0.3)
+      .attr('marker-end', (d: unknown) => (d as GraphLink).isActive ? 'url(#arrowhead-active)' : 'url(#arrowhead)')
       .selection();
 
     // Render nodes
@@ -563,7 +566,7 @@ export default function CascadeNetworkDiagram({
       .attr('class', 'node')
       .call(drag<SVGGElement, GraphNode>()
         .on('start', (event, d) => {
-          if (!event.active) simulationRef.current.alphaTarget(0.3).restart();
+          if (!event.active) simulationRef.current!.alphaTarget(0.3).restart();
           d.fx = d.x;
           d.fy = d.y;
         })
@@ -572,7 +575,7 @@ export default function CascadeNetworkDiagram({
           d.fy = event.y;
         })
         .on('end', (event, d) => {
-          if (!event.active) simulationRef.current.alphaTarget(0);
+          if (!event.active) simulationRef.current!.alphaTarget(0);
           d.fx = null;
           d.fy = null;
         }) as any
@@ -582,19 +585,19 @@ export default function CascadeNetworkDiagram({
     const circles = nodeElements.selectAll('circle')
       .data(d => [d])
       .join('circle')
-      .attr('r', d => d.size / 2);
+      .attr('r', (d: unknown) => (d as GraphNode).size / 2);
 
     // Animate circle properties with transitions
     circles
       .transition()
       .duration(500)
-      .attr('fill', d => getBlendedNodeColor(d.inputCount, d.outputCount))
-      .attr('fill-opacity', d => 0.3 + 0.7 * d.recency)
-      .attr('stroke', d => d.isActive ? '#FFD700' : '#555')
-      .attr('stroke-width', d => d.isActive ? 4 : 2)
-      .attr('filter', d => {
-        if (d.isActive) return 'url(#active-glow)';
-        if (d.recency > 0.6) return 'url(#recent-glow)';
+      .attr('fill', (d: unknown) => getBlendedNodeColor((d as GraphNode).inputCount, (d as GraphNode).outputCount))
+      .attr('fill-opacity', (d: unknown) => 0.3 + 0.7 * (d as GraphNode).recency)
+      .attr('stroke', (d: unknown) => (d as GraphNode).isActive ? '#FFD700' : '#555')
+      .attr('stroke-width', (d: unknown) => (d as GraphNode).isActive ? 4 : 2)
+      .attr('filter', (d: unknown) => {
+        if ((d as GraphNode).isActive) return 'url(#active-glow)';
+        if ((d as GraphNode).recency > 0.6) return 'url(#recent-glow)';
         return 'none';
       });
 
@@ -604,7 +607,7 @@ export default function CascadeNetworkDiagram({
       .join('text')
       .text(d => d.label)
       .attr('text-anchor', 'middle')
-      .attr('dy', d => d.size / 2 + 12)
+      .attr('dy', (d: unknown) => (d as GraphNode).size / 2 + 12)
       .attr('font-size', '10px')
       .attr('font-weight', '600')
       .attr('fill', 'currentColor')
@@ -614,11 +617,11 @@ export default function CascadeNetworkDiagram({
     labels
       .transition()
       .duration(500)
-      .attr('opacity', d => 0.3 + 0.7 * d.recency);
+      .attr('opacity', (d: unknown) => 0.3 + 0.7 * (d as GraphNode).recency);
 
     // Hover interactions - highlight node and its connections
     nodeElements
-      .on('mouseenter', function(event, d) {
+      .on('mouseenter', function(_, d) {
         // Find connected edges
         const connectedEdges = graphData.links.filter(l =>
           (l.source as GraphNode).id === d.id || (l.target as GraphNode).id === d.id
@@ -668,8 +671,8 @@ export default function CascadeNetworkDiagram({
         nodeElements.selectAll('circle')
           .transition()
           .duration(200)
-          .attr('stroke-width', d => d.isActive ? 4 : 2)
-          .attr('stroke', d => d.isActive ? '#FFD700' : '#555');
+          .attr('stroke-width', (d: unknown) => (d as GraphNode).isActive ? 4 : 2)
+          .attr('stroke', (d: unknown) => (d as GraphNode).isActive ? '#FFD700' : '#555');
       })
       .style('cursor', 'pointer');
 
@@ -699,12 +702,12 @@ export default function CascadeNetworkDiagram({
     // Update positions on simulation tick
     simulationRef.current.on('tick', () => {
       edgeElements
-        .attr('x1', d => (d.source as GraphNode).x!)
-        .attr('y1', d => (d.source as GraphNode).y!)
-        .attr('x2', d => (d.target as GraphNode).x!)
-        .attr('y2', d => (d.target as GraphNode).y!);
+        .attr('x1', (d: unknown) => ((d as GraphLink).source as GraphNode).x!)
+        .attr('y1', (d: unknown) => ((d as GraphLink).source as GraphNode).y!)
+        .attr('x2', (d: unknown) => ((d as GraphLink).target as GraphNode).x!)
+        .attr('y2', (d: unknown) => ((d as GraphLink).target as GraphNode).y!);
 
-      nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
+      nodeElements.attr('transform', (d: unknown) => `translate(${(d as GraphNode).x!},${(d as GraphNode).y!})`);
     });
 
     // Auto camera following (smooth zoom to active nodes)
