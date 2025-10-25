@@ -4,15 +4,19 @@ import type { Element } from '../types'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { hasOnlyRadioactiveIsotopes } from '../services/queryService'
 import { SPECIAL_PARTICLES } from '../constants/specialParticles'
+import NuclidePickerModal from './NuclidePickerModal'
+import { parseNuclideNotation } from '../services/isotopeService'
 
 interface PeriodicTableSelectorProps {
   label: string
   availableElements: Element[]
-  selectedElements: string[]
+  selectedElements: string[] // In nuclide mode, this contains isotope notations like "Li-7", "Ni-58"
   onSelectionChange: (elements: string[]) => void
   maxSelections?: number
   align?: 'left' | 'center' | 'right'
   testId?: string
+  mode?: 'element' | 'nuclide' // Default: 'element' for backwards compatibility
+  disableHydrogenIsotopes?: boolean // When true, D and T buttons are hidden (nuclide mode only)
 }
 
 const HYDROGEN_ISOTOPES = [
@@ -157,10 +161,15 @@ export default function PeriodicTableSelector({
   maxSelections,
   align = 'left',
   testId,
+  mode = 'element',
+  disableHydrogenIsotopes = false,
 }: PeriodicTableSelectorProps) {
   const { db } = useDatabase()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Nuclide picker modal state
+  const [nuclidePicker, setNuclidePicker] = useState<{ element: Element; isOpen: boolean } | null>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -191,6 +200,17 @@ export default function PeriodicTableSelector({
   }, [isOpen])
 
   const toggleElement = (symbol: string) => {
+    // In nuclide mode, clicking an element opens the nuclide picker
+    if (mode === 'nuclide') {
+      const element = availableElements.find(el => el.E === symbol)
+      if (element) {
+        // Keep periodic table open so users can select from multiple elements
+        setNuclidePicker({ element, isOpen: true })
+        return
+      }
+    }
+
+    // Element mode: direct toggle
     if (selectedElements.includes(symbol)) {
       onSelectionChange(selectedElements.filter(e => e !== symbol))
     } else {
@@ -199,6 +219,10 @@ export default function PeriodicTableSelector({
       }
       onSelectionChange([...selectedElements, symbol])
     }
+  }
+
+  const handleNuclideSelection = (nuclides: string[]) => {
+    onSelectionChange(nuclides)
   }
 
   const clearSelection = () => {
@@ -279,7 +303,15 @@ const allElementNames: Record<number, string> = {
     }
 
     const { symbol, Z, isAvailable } = cellData
-    const isSelected = selectedElements.includes(symbol)
+
+    // In nuclide mode, check if any isotope of this element is selected
+    const isSelected = mode === 'nuclide'
+      ? selectedElements.some(sel => {
+          const parsed = parseNuclideNotation(sel)
+          return parsed && parsed.element === symbol
+        })
+      : selectedElements.includes(symbol)
+
     const isPurelyRadioactive = db && isAvailable ? hasOnlyRadioactiveIsotopes(db, Z) : false
 
     const buttonTitle = isAvailable
@@ -324,23 +356,26 @@ const allElementNames: Record<number, string> = {
         >
           {buttonChildren}
         </button>
-        <div className="periodic-cell-isotope-group">
-          {HYDROGEN_ISOTOPES.map(isotope => {
-            const isotopeAvailable = availableSymbols.has(isotope.symbol)
-            const isotopeSelected = selectedElements.includes(isotope.symbol)
-            return (
-              <button
-                key={isotope.symbol}
-                onClick={() => isotopeAvailable && toggleElement(isotope.symbol)}
-                disabled={!isotopeAvailable}
-                className={`${ISOTOPE_BUTTON_COMMON} ${isotopeSelected ? 'periodic-cell-isotope-selected' : ''} ${!isotopeAvailable ? 'periodic-cell-isotope-disabled' : ''}`}
-                title={`${isotope.label} - hydrogen isotope`}
-              >
-                {isotope.symbol}
-              </button>
-            )
-          })}
-        </div>
+        {/* Only show D and T buttons if not disabled */}
+        {!disableHydrogenIsotopes && (
+          <div className="periodic-cell-isotope-group">
+            {HYDROGEN_ISOTOPES.map(isotope => {
+              const isotopeAvailable = availableSymbols.has(isotope.symbol)
+              const isotopeSelected = selectedElements.includes(isotope.symbol)
+              return (
+                <button
+                  key={isotope.symbol}
+                  onClick={() => isotopeAvailable && toggleElement(isotope.symbol)}
+                  disabled={!isotopeAvailable}
+                  className={`${ISOTOPE_BUTTON_COMMON} ${isotopeSelected ? 'periodic-cell-isotope-selected' : ''} ${!isotopeAvailable ? 'periodic-cell-isotope-disabled' : ''}`}
+                  title={`${isotope.label} - hydrogen isotope`}
+                >
+                  {isotope.symbol}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }
@@ -370,21 +405,40 @@ const allElementNames: Record<number, string> = {
       {selectedElements.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {selectedElements.map(symbol => {
-            const element = availableElements.find(e => e.E === symbol)
+            // Parse isotope notation for nuclide mode
+            const parsed = parseNuclideNotation(symbol)
+            const elementSymbol = parsed?.element || symbol
+            const element = availableElements.find(e => e.E === elementSymbol)
             const isotopeLabel = HYDROGEN_ISOTOPES.find(isotope => isotope.symbol === symbol)?.label
             const particleLabel = SPECIAL_PARTICLES.find(p => p.id === symbol)?.name
+
+            // In nuclide mode, show isotope notation; in element mode, show element name
+            const displayLabel = mode === 'nuclide' && parsed
+              ? `${symbol}` // Show full isotope notation like "Li-7"
+              : symbol
+
+            const tooltipText = mode === 'nuclide' && parsed && element
+              ? `${element.EName}-${parsed.massNumber}`
+              : element
+                ? element.EName
+                : isotopeLabel || particleLabel || symbol
+
             return (
               <span
                 key={symbol}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 rounded text-xs font-medium"
+                title={tooltipText}
               >
-                {symbol}
-                {element && ` (${element.EName})`}
-                {!element && isotopeLabel && ` (${isotopeLabel})`}
-                {!element && !isotopeLabel && particleLabel && ` (${particleLabel})`}
+                <span className="font-mono">{displayLabel}</span>
+                {mode === 'element' && element && ` (${element.EName})`}
+                {mode === 'element' && !element && isotopeLabel && ` (${isotopeLabel})`}
+                {mode === 'element' && !element && !isotopeLabel && particleLabel && ` (${particleLabel})`}
                 <button
                   type="button"
-                  onClick={() => toggleElement(symbol)}
+                  onClick={() => {
+                    // Remove this nuclide/element from selection
+                    onSelectionChange(selectedElements.filter(e => e !== symbol))
+                  }}
                   className="hover:text-primary-900 dark:hover:text-primary-200"
                 >
                   <X className="w-3 h-3" />
@@ -976,6 +1030,17 @@ const allElementNames: Record<number, string> = {
           background: #1f2937;
         }
       `}</style>
+
+      {/* Nuclide Picker Modal */}
+      {nuclidePicker && (
+        <NuclidePickerModal
+          element={nuclidePicker.element}
+          isOpen={nuclidePicker.isOpen}
+          onClose={() => setNuclidePicker(null)}
+          selectedNuclides={selectedElements}
+          onSelectionChange={handleNuclideSelection}
+        />
+      )}
     </div>
   )
 }

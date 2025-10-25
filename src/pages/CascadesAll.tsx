@@ -1,21 +1,211 @@
-import { useState } from 'react'
-import { Play, Settings, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Play, Settings, AlertCircle, CheckCircle, XCircle, Loader2, Download } from 'lucide-react'
+import { useDatabase } from '../contexts/DatabaseContext'
+import { useQueryState } from '../contexts/QueryStateContext'
+import { useCascadeWorker } from '../hooks/useCascadeWorker'
+import CascadeProgressCard from '../components/CascadeProgressCard'
+import CascadeTabs from '../components/CascadeTabs'
+import PeriodicTableSelector from '../components/PeriodicTableSelector'
+import { getAllElements } from '../services/queryService'
+import type { CascadeResults, Element } from '../types'
 
 export default function CascadesAll() {
+  const { db } = useDatabase()
+  const { getCascadeState, updateCascadeState } = useQueryState()
+  const { runCascade, cancelCascade, progress, isRunning, error: workerError } = useCascadeWorker()
+  const [hasRestoredFromContext, setHasRestoredFromContext] = useState(false)
+
   const [params, setParams] = useState({
     temperature: 2400,
     minFusionMeV: 1.0,
     minTwoToTwoMeV: 1.0,
-    maxNuclides: 50,
-    maxLoops: 2,
+    maxNuclides: 5000,
+    maxLoops: 25,
     feedbackBosons: true,
     feedbackFermions: true,
     allowDimers: true,
     excludeMelted: false,
-    excludeBoiledOff: false,
+    excludeBoiledOff: true,
   })
 
-  const [fuelNuclides, setFuelNuclides] = useState('H1, Li7, Al27, N14, Ni58, Ni60, Ni62, B10, B11')
+  // Local state for sliders during dragging (prevents performance issues)
+  const [sliderMaxNuclides, setSliderMaxNuclides] = useState(5000)
+  const [sliderMaxLoops, setSliderMaxLoops] = useState(25)
+
+  const [availableElements, setAvailableElements] = useState<Element[]>([])
+  const [fuelNuclides, setFuelNuclides] = useState<string[]>(['H-1', 'Li-7', 'Al-27', 'N-14', 'Ni-58', 'Ni-60', 'Ni-62', 'B-10', 'B-11'])
+  const [results, setResults] = useState<CascadeResults | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load available elements and restore state when database is ready
+  useEffect(() => {
+    if (db) {
+      const elements = getAllElements(db)
+      setAvailableElements(elements)
+
+      // Restore state from context if not already done
+      if (!hasRestoredFromContext) {
+        const savedState = getCascadeState()
+        if (savedState) {
+          setParams({
+            temperature: savedState.temperature,
+            minFusionMeV: savedState.minFusionMeV,
+            minTwoToTwoMeV: savedState.minTwoToTwoMeV,
+            maxNuclides: savedState.maxNuclides,
+            maxLoops: savedState.maxLoops,
+            feedbackBosons: savedState.feedbackBosons,
+            feedbackFermions: savedState.feedbackFermions,
+            allowDimers: savedState.allowDimers,
+            excludeMelted: savedState.excludeMelted,
+            excludeBoiledOff: savedState.excludeBoiledOff,
+          })
+          setSliderMaxNuclides(savedState.maxNuclides)
+          setSliderMaxLoops(savedState.maxLoops)
+          setFuelNuclides(savedState.fuelNuclides)
+
+          // Restore simulation results if available
+          if (savedState.results) {
+            setResults(savedState.results)
+          }
+        }
+        setHasRestoredFromContext(true)
+      }
+    }
+  }, [db, hasRestoredFromContext, getCascadeState])
+
+  // Save state to context whenever it changes
+  useEffect(() => {
+    if (!hasRestoredFromContext) return
+
+    updateCascadeState({
+      temperature: params.temperature,
+      minFusionMeV: params.minFusionMeV,
+      minTwoToTwoMeV: params.minTwoToTwoMeV,
+      maxNuclides: params.maxNuclides,
+      maxLoops: params.maxLoops,
+      feedbackBosons: params.feedbackBosons,
+      feedbackFermions: params.feedbackFermions,
+      allowDimers: params.allowDimers,
+      excludeMelted: params.excludeMelted,
+      excludeBoiledOff: params.excludeBoiledOff,
+      fuelNuclides,
+      results: results || undefined,
+    })
+  }, [
+    hasRestoredFromContext,
+    params.temperature,
+    params.minFusionMeV,
+    params.minTwoToTwoMeV,
+    params.maxNuclides,
+    params.maxLoops,
+    params.feedbackBosons,
+    params.feedbackFermions,
+    params.allowDimers,
+    params.excludeMelted,
+    params.excludeBoiledOff,
+    fuelNuclides,
+    results,
+    updateCascadeState,
+  ])
+
+  const handleRunSimulation = async () => {
+    if (!db) {
+      setError('Database not loaded yet. Please wait...')
+      return
+    }
+
+    setError(null)
+    setResults(null)
+
+    try {
+      // Validate fuel nuclides
+      if (fuelNuclides.length === 0) {
+        throw new Error('Please select at least one fuel nuclide')
+      }
+
+      // Export database to ArrayBuffer for worker
+      const dbBuffer = db.export().buffer
+
+      // Run cascade in worker
+      const cascadeResults = await runCascade({
+        fuelNuclides: fuelNuclides,
+        ...params,
+      }, dbBuffer as ArrayBuffer)
+
+      setResults(cascadeResults)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(message)
+      console.error('Cascade simulation error:', err)
+    }
+  }
+
+  const handleReset = () => {
+    setParams({
+      temperature: 2400,
+      minFusionMeV: 1.0,
+      minTwoToTwoMeV: 1.0,
+      maxNuclides: 5000,
+      maxLoops: 25,
+      feedbackBosons: true,
+      feedbackFermions: true,
+      allowDimers: true,
+      excludeMelted: false,
+      excludeBoiledOff: true,
+    })
+    setSliderMaxNuclides(5000)
+    setSliderMaxLoops(25)
+    setFuelNuclides(['H-1', 'Li-7', 'Al-27', 'N-14', 'Ni-58', 'Ni-60', 'Ni-62', 'B-10', 'B-11'])
+    setResults(null)
+    setError(null)
+  }
+
+  const handleDownloadCSV = () => {
+    if (!results) return
+
+    // Build CSV content
+    const lines: string[] = []
+
+    // Header
+    lines.push('Loop,Type,Input1,Input2,Output1,Output2,Energy_MeV,Neutrino')
+
+    // Reactions
+    results.reactions.forEach((reaction) => {
+      const input1 = reaction.inputs[0] || ''
+      const input2 = reaction.inputs[1] || ''
+      const output1 = reaction.outputs[0] || ''
+      const output2 = reaction.outputs[1] || ''
+      lines.push(
+        `${reaction.loop},${reaction.type},${input1},${input2},${output1},${output2},${reaction.MeV},${reaction.neutrino}`
+      )
+    })
+
+    // Add blank line
+    lines.push('')
+    lines.push('Product Distribution')
+    lines.push('Nuclide,Count')
+
+    // Product distribution
+    Array.from(results.productDistribution.entries())
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([nuclide, count]) => {
+        lines.push(`${nuclide},${count}`)
+      })
+
+    // Create blob and download
+    const csv = lines.join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `cascade_results_${Date.now()}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -24,31 +214,30 @@ export default function CascadesAll() {
         <p className="text-gray-600 dark:text-gray-400">Model cascading chain reactions from initial fuel nuclides</p>
       </div>
 
-      <div className="card p-6 mb-6 bg-orange-50 dark:bg-orange-900/20">
+      <div className="card p-6 mb-6 bg-blue-50 dark:bg-blue-900/20">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-700 dark:text-gray-300">
-            <strong>Note:</strong> Cascade simulations are computationally intensive.
-            Start with conservative settings (max 50 nuclides, 2-3 loops) to prevent timeouts.
-            Processing time typically ranges from 30 seconds to 15 minutes depending on parameters.
+            <strong>Database-driven limits:</strong> The database contains 324 nuclides across 92 elements,
+            with 3,921 fusion reactions and 1.2M two-to-two reactions. Slider ranges reflect these constraints.
+            Default settings (5000 max nuclides, 25 loops) provide comprehensive results.
+            Processing time ranges from 30 seconds to 15 minutes depending on parameters.
           </div>
         </div>
       </div>
 
       <div className="card p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Fuel Nuclides</h2>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Enter fuel nuclides (comma-separated)
-        </label>
-        <textarea
-          className="input"
-          rows={3}
-          value={fuelNuclides}
-          onChange={(e) => setFuelNuclides(e.target.value)}
-          placeholder="e.g., H1, D2, Li7, Ni58"
+        <PeriodicTableSelector
+          label="Select specific isotopes for your fuel mixture"
+          availableElements={availableElements}
+          selectedElements={fuelNuclides}
+          onSelectionChange={setFuelNuclides}
+          mode="nuclide"
+          disableHydrogenIsotopes={true}
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          Format: ElementSymbol + MassNumber (e.g., H1 for protium, D2 for deuterium)
+          Click on elements to select specific isotopes. Color coding indicates natural abundance.
         </p>
       </div>
 
@@ -99,30 +288,46 @@ export default function CascadesAll() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Max Nuclides to Pair
+              Max Nuclides to Pair: {sliderMaxNuclides}
             </label>
             <input
-              type="number"
-              className="input"
-              value={params.maxNuclides}
-              onChange={(e) => setParams({...params, maxNuclides: parseInt(e.target.value)})}
-              max={100}
+              type="range"
+              min="10"
+              max="10000"
+              step="10"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+              value={sliderMaxNuclides}
+              onInput={(e) => setSliderMaxNuclides(parseInt((e.target as HTMLInputElement).value))}
+              onMouseUp={(e) => setParams({...params, maxNuclides: parseInt((e.target as HTMLInputElement).value)})}
+              onTouchEnd={(e) => setParams({...params, maxNuclides: parseInt((e.target as HTMLInputElement).value)})}
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Recommended: 50-100</p>
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <span>10</span>
+              <span>Database has 324 total nuclides</span>
+              <span>10,000</span>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Max Cascade Loops
+              Max Cascade Loops: {sliderMaxLoops}
             </label>
             <input
-              type="number"
-              className="input"
-              value={params.maxLoops}
-              onChange={(e) => setParams({...params, maxLoops: parseInt(e.target.value)})}
-              max={5}
+              type="range"
+              min="1"
+              max="100"
+              step="1"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+              value={sliderMaxLoops}
+              onInput={(e) => setSliderMaxLoops(parseInt((e.target as HTMLInputElement).value))}
+              onMouseUp={(e) => setParams({...params, maxLoops: parseInt((e.target as HTMLInputElement).value)})}
+              onTouchEnd={(e) => setParams({...params, maxLoops: parseInt((e.target as HTMLInputElement).value)})}
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Recommended: 2-3</p>
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <span>1</span>
+              <span>Recommended: 10-50</span>
+              <span>100</span>
+            </div>
           </div>
         </div>
 
@@ -179,25 +384,142 @@ export default function CascadesAll() {
       </div>
 
       <div className="flex gap-3">
-        <button className="btn btn-primary px-8 py-3">
-          <Play className="w-5 h-5 mr-2 inline" />
-          Run Cascade Simulation
+        <button
+          className="btn btn-primary px-8 py-3"
+          onClick={handleRunSimulation}
+          disabled={isRunning || !db}
+        >
+          {isRunning ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 inline animate-spin" />
+              Running...
+            </>
+          ) : (
+            <>
+              <Play className="w-5 h-5 mr-2 inline" />
+              Run Cascade Simulation
+            </>
+          )}
         </button>
-        <button className="btn btn-secondary px-8 py-3">
+        <button
+          className="btn btn-secondary px-8 py-3"
+          onClick={handleReset}
+          disabled={isRunning}
+        >
           Reset Parameters
         </button>
       </div>
 
-      <div className="card p-6 mt-6 bg-blue-50 dark:bg-blue-900/30">
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">How Cascades Work</h3>
-        <ol className="text-sm text-gray-700 dark:text-gray-300 space-y-2 list-decimal list-inside">
-          <li>Start with your specified fuel nuclides</li>
-          <li>Find all possible Fusion and 2-2 reactions between these nuclides</li>
-          <li>Products meeting energy/temperature criteria are "fed back" as new reactants</li>
-          <li>Process repeats recursively up to the max loop count</li>
-          <li>Results show the full cascade of reactions and final product distribution</li>
-        </ol>
-      </div>
+      {/* Progress Display */}
+      {isRunning && progress && (
+        <div className="mt-6">
+          <CascadeProgressCard progress={progress} onCancel={cancelCascade} />
+        </div>
+      )}
+
+      {/* Error Display */}
+      {(error || workerError) && (
+        <div className="card p-6 mt-6 bg-red-50 dark:bg-red-900/20">
+          <div className="flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-200">{error || workerError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Results Display */}
+      {results && (
+        <div className="mt-6 space-y-6">
+          {/* Completion Banner */}
+          <div className="card p-6 bg-green-50 dark:bg-green-900/20">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-green-900 dark:text-green-100">
+                    Cascade Complete
+                  </h3>
+                  <button
+                    onClick={handleDownloadCSV}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download CSV
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Reactions Found</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {results.reactions.length}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Loops Executed</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {results.loopsExecuted}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Total Energy</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {results.totalEnergy.toFixed(2)} MeV
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Execution Time</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {results.executionTime.toFixed(0)} ms
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Termination: </span>
+                  {results.terminationReason === 'max_loops' && 'Reached maximum loops'}
+                  {results.terminationReason === 'no_new_products' && 'No new products generated'}
+                  {results.terminationReason === 'max_nuclides' && 'Reached maximum nuclides limit'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabbed Results Interface */}
+          {results.reactions.length > 0 ? (
+            <CascadeTabs results={results} fuelNuclides={fuelNuclides} />
+          ) : (
+            <div className="card p-6 bg-yellow-50 dark:bg-yellow-900/20">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                    No Reactions Found
+                  </h3>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                    No reactions were found matching your energy thresholds and fuel nuclides.
+                    Try adjusting your parameters or adding more fuel nuclides.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!results && (
+        <div className="card p-6 mt-6 bg-blue-50 dark:bg-blue-900/30">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">How Cascades Work</h3>
+          <ol className="text-sm text-gray-700 dark:text-gray-300 space-y-2 list-decimal list-inside">
+            <li>Start with your specified fuel nuclides</li>
+            <li>Find all possible Fusion and 2-2 reactions between these nuclides</li>
+            <li>Products meeting energy/temperature criteria are "fed back" as new reactants</li>
+            <li>Process repeats recursively up to the max loop count</li>
+            <li>Results show the full cascade of reactions and final product distribution</li>
+          </ol>
+        </div>
+      )}
     </div>
   )
 }

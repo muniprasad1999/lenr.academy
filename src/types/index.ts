@@ -4,6 +4,7 @@ export type NeutrinoType = 'none' | 'left' | 'right' | 'left-right' | 'any';
 export type BosonFermionType = 'b' | 'f';
 export type ReactionType = 'fusion' | 'fission' | 'twotwo';
 export type HeatmapMode = 'frequency' | 'energy' | 'diversity';
+export type NodeRole = 'fuel' | 'intermediate' | 'product' | 'stable';
 
 export interface Nuclide {
   id: number;
@@ -221,6 +222,27 @@ export interface CascadeParameters {
   excludeBoiledOff: boolean;
 }
 
+// Cascade simulation result types
+export interface CascadeReaction {
+  type: 'fusion' | 'twotwo';         // Reaction type
+  inputs: string[];                  // Nuclide IDs (e.g., ["H-1", "Li-7"])
+  outputs: string[];                 // Product nuclide IDs
+  MeV: number;                       // Energy released/absorbed
+  loop: number;                      // Which iteration produced this reaction (0 = initial)
+  neutrino: NeutrinoType;            // Neutrino involvement
+}
+
+export interface CascadeResults {
+  reactions: CascadeReaction[];                    // All reactions in cascade
+  productDistribution: Map<string, number>;        // Nuclide ID → count of appearances
+  nuclides: Nuclide[];                             // All nuclides involved
+  elements: Element[];                             // All elements involved
+  totalEnergy: number;                             // Sum of all MeV values
+  loopsExecuted: number;                           // Actual loops run (may be < maxLoops)
+  executionTime: number;                           // Time in milliseconds
+  terminationReason: 'max_loops' | 'no_new_products' | 'max_nuclides'; // Why cascade stopped
+}
+
 // Decay chain types for multi-generation radioactive decay visualization
 export interface DecayChainNode {
   nuclide: { Z: number; A: number; E: string };
@@ -285,9 +307,33 @@ export interface QueryPageState {
   lastUpdated?: number;
 }
 
+export interface CascadePageState {
+  // Cascade parameters
+  temperature: number;
+  minFusionMeV: number;
+  minTwoToTwoMeV: number;
+  maxNuclides: number;
+  maxLoops: number;
+  feedbackBosons: boolean;
+  feedbackFermions: boolean;
+  allowDimers: boolean;
+  excludeMelted: boolean;
+  excludeBoiledOff: boolean;
+
+  // Fuel nuclides
+  fuelNuclides: string[];
+
+  // Simulation results (optional - only present after running simulation)
+  results?: CascadeResults;
+
+  // Timestamp for cache management
+  lastUpdated?: number;
+}
+
 export interface AllQueryStates {
   fusion?: QueryPageState;
   fission?: QueryPageState;
   twotwo?: QueryPageState;
+  cascade?: CascadePageState;
   version?: number;  // For future migration if state structure changes
 }
