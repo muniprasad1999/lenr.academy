@@ -1,1 +1,1 @@
-This is the firdt file in out git muni folder
+This is the first file in out git muni folder
